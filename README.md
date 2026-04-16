@@ -54,7 +54,7 @@ The real exam randomly picks 4 of 6 scenarios. This course lets you practice all
 
 ```bash
 # Clone the repo
-git clone https://github.com/YOUR_USERNAME/claude-architect-course.git
+git clone https://github.com/rodrigosiviero/claude-certified-architect.git
 cd claude-architect-course
 
 # Install dependencies (pnpm recommended)
