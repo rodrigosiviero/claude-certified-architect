@@ -2,8 +2,8 @@ import path from "path"
 import react from "@vitejs/plugin-react"
 import { defineConfig } from "vite"
 
-export default defineConfig({
-  base: '/claude-certified-architect/',
+export default defineConfig(({ command }) => ({
+  base: command === 'build' ? '/claude-certified-architect/' : '/',
   plugins: [
     react(),
   ],
@@ -12,4 +12,4 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
-})
+}))
