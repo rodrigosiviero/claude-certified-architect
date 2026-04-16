@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { HashRouter, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from 'next-themes';
 import { CourseProvider } from './context/CourseContext';
 import Layout from './components/Layout';
@@ -23,7 +23,7 @@ function App() {
   return (
     <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
       <CourseProvider>
-        <BrowserRouter>
+        <HashRouter>
           <Routes>
             <Route path="/" element={<Layout />}>
               <Route index element={<Home />} />
@@ -44,7 +44,7 @@ function App() {
               <Route path="flashcards" element={<Flashcards />} />
             </Route>
           </Routes>
-        </BrowserRouter>
+        </HashRouter>
       </CourseProvider>
     </ThemeProvider>
   );
