@@ -16,7 +16,7 @@ export default function NotesFab({ lessonId }: NotesFabProps) {
     <>
       <button
         onClick={() => setOpen(true)}
-        className={`fixed bottom-6 right-6 w-12 h-12 rounded-full shadow-lg flex items-center justify-center transition-all z-30 ${
+        className={`fixed bottom-20 lg:bottom-6 right-6 w-12 h-12 rounded-full shadow-lg flex items-center justify-center transition-all z-30 ${
           hasNote
             ? 'bg-amber-500 hover:bg-amber-400 text-white'
             : 'bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700'

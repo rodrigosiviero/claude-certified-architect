@@ -182,45 +182,51 @@ export default function PracticeExam() {
         </div>
 
         {/* Navigation */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-3">
           <button
             onClick={() => setCurrentQ((p) => Math.max(0, p - 1))}
             disabled={currentQ === 0}
-            className="px-5 py-2.5 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            className="px-4 py-2.5 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold disabled:opacity-40 disabled:cursor-not-allowed transition-colors shrink-0"
           >
-            <ArrowLeft className="w-4 h-4 inline mr-1" /> Previous
+            <ArrowLeft className="w-4 h-4 inline mr-1" /> Prev
           </button>
 
-          <div className="flex gap-1.5">
-            {questions.map((_, i) => (
-              <button
-                key={i}
-                onClick={() => setCurrentQ(i)}
-                className={`w-2.5 h-2.5 rounded-full transition-colors ${
-                  i === currentQ
-                    ? 'bg-violet-600 scale-125'
-                    : answers[questions[i].id] !== undefined
-                    ? 'bg-violet-300'
-                    : 'bg-slate-200'
-                }`}
-                title={`Question ${i + 1}`}
-              />
-            ))}
+          {/* Compact question navigator */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center justify-center gap-1 overflow-x-auto py-1 scrollbar-hide">
+              {questions.map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => setCurrentQ(i)}
+                  className={`w-2 h-2 rounded-full transition-all shrink-0 ${
+                    i === currentQ
+                      ? 'bg-violet-600 scale-150 ring-2 ring-violet-300'
+                      : answers[questions[i].id] !== undefined
+                      ? 'bg-violet-300'
+                      : 'bg-slate-200'
+                  }`}
+                  title={`Q${i + 1}`}
+                />
+              ))}
+            </div>
+            <div className="text-center text-xs text-slate-400 mt-0.5">
+              {currentQ + 1} of {questions.length} · {answeredCount} answered
+            </div>
           </div>
 
           {currentQ < questions.length - 1 ? (
             <button
               onClick={() => setCurrentQ((p) => p + 1)}
-              className="px-5 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-semibold transition-colors"
+              className="px-4 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-semibold transition-colors shrink-0"
             >
               Next <ArrowRight className="w-4 h-4 inline ml-1" />
             </button>
           ) : (
             <button
               onClick={submitExam}
-              className="px-5 py-2.5 rounded-xl bg-green-600 hover:bg-green-700 text-white font-semibold transition-colors"
+              className="px-4 py-2.5 rounded-xl bg-green-600 hover:bg-green-700 text-white font-semibold transition-colors shrink-0"
             >
-              Submit Exam ✓
+              Submit ✓
             </button>
           )}
         </div>
