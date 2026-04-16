@@ -1,12 +1,14 @@
 export interface Scenario {
-  id: string;
+  id: number;
   domain: Domain;
-  title: string;
-  description: string;
+  domainLabel: string;
+  difficulty: string;
+  scenario: string;
   question: string;
   options: string[];
-  correctIndex: number;
+  correct: number;
   explanation: string;
+  trap?: string;
 }
 
 type Domain = 'd1' | 'd2' | 'd3' | 'd4' | 'd5';
