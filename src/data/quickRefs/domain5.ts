@@ -1,0 +1,88 @@
+import type { QuickRefData } from '../types';
+
+const domain5QuickRef: QuickRefData = {
+      domainLabel: 'Domain 5 — Monitoring, Safety & Production Readiness',
+      examWeight: '15% Exam Weight',
+      topTested: ['Context Edges', 'Escalation Triggers', 'PII Redaction', 'Provenance'],
+      sections: [
+        { title: '5.1 Context Management', points: [
+          '"Lost in the middle" effect — put critical info at START and END',
+          'State tracking > conversation memory (files > chat history)',
+          'Scratchpad files for multi-phase work',
+          'Progressive summarization risks: numbers get distorted over rounds',
+          'Claude attends most to the beginning and end of context — middle gets less attention',
+          'Use structured files (JSON/YAML) for state, not free-form conversation',
+          'For multi-phase tasks: write phase results to files, reference them in next phase',
+          'Progressive summarization is lossy — specific numbers and details get rounded or dropped',
+        ] },
+        { title: '5.2 Escalation Triggers', points: [
+          'Explicit request = IMMEDIATE escalation (no "let me try first")',
+          'Sentiment alone ≠ trigger (frustration ≠ escalation)',
+          'Multiple ambiguous matches → ask for clarification',
+          'Attempt-first, then escalate for non-explicit requests',
+          '"Talk to a human", "I want a real person" = explicit = escalate immediately',
+          '"This is frustrating", "ugh" = sentiment = do NOT escalate, just help',
+          'When uncertain: attempt to help first, then escalate if the request persists',
+          'Multiple escalation points matching → ask the user to clarify which one',
+        ] },
+        { title: '5.3 PII Protection', points: [
+          'Redact at tool boundaries — data crosses at the tool layer',
+          'Least information principle: only pass what\'s strictly needed',
+          'Safe logging with field-level redaction',
+          'Error messages must NEVER expose PII',
+          'Tool boundaries = the point where data leaves one system and enters another',
+          'Redact BEFORE data enters Claude\'s context — prevention, not cure',
+          'Common PII: SSN, email, phone, address, DOB, financial account numbers',
+          'Safe logging: log that a query happened, not what the query contained',
+          'Session-based isolation: PII from one user\'s session doesn\'t leak to another',
+        ] },
+        { title: '5.4 Large Workflows', points: [
+          'Paginate results: LIMIT + count + summary (never dump everything)',
+          'Subagent isolation for verbose exploration tasks',
+          'Crash recovery with state manifests (checkpoint + resume)',
+          'Stratified quality monitoring: measure per-segment, not just overall',
+          'Pattern: return first N results + total_count + has_more boolean',
+          'Let Claude request more pages if needed — don\'t pre-fetch everything',
+          'State manifests: JSON file with completed steps, pending steps, intermediate results',
+          'On crash: read manifest → resume from last completed step → continue workflow',
+          'Quality monitoring per segment catches localized degradation that averages hide',
+        ] },
+        { title: '5.5 Multi-Turn Operations', points: [
+          'Structured handoff packages: findings + confidence + caveats + next steps',
+          'Human-in-the-loop for ALL critical operations',
+          'State-driven workflow, not memory-driven',
+          'Error recovery per step, not per conversation',
+          'Handoff package structure: what was found, how confident, what\'s uncertain, what\'s next',
+          'Critical operations = anything with irreversible consequences (delete, pay, deploy)',
+          'Store state in files/db between turns — conversation memory is unreliable',
+          'Each step should be independently retriable — don\'t require replaying from scratch',
+        ] },
+        { title: '5.6 Provenance & Attribution', points: [
+          'Claim-source mapping: every claim needs source + date',
+          'Don\'t average conflicting values — present both with attribution',
+          'Classify: established vs contested vs single-source',
+          'Include dates — stale information is unreliable information',
+          'Established = multiple independent sources agree (high confidence)',
+          'Contested = sources disagree (present both, explain the disagreement)',
+          'Single-source = only one source exists (flag as unverified)',
+          'Never silently pick one source over another — always show the conflict',
+          'Dates matter: "2023 data" and "2025 data" may legitimately differ',
+        ] },
+      ],
+      antiPatterns: [
+        { pattern: 'Burying critical info in the middle of context', reason: 'The "lost in the middle" effect means Claude attends less to middle content. Put key facts at start and end.' },
+        { pattern: 'Escalating on sentiment alone', reason: 'Frustrated users ≠ escalation triggers. Only explicit requests trigger immediate escalation.' },
+        { pattern: 'Averaging conflicting statistics', reason: 'Don\'t average conflicting values. Present both with attribution and let the user decide.' },
+        { pattern: 'Skipping PII redaction in tool outputs', reason: 'Data crosses trust boundaries at the tool layer. Redact BEFORE passing results back to Claude.' },
+        { pattern: 'Memory-driven multi-turn workflows', reason: 'Conversation memory is lossy. Use state files/checkpoints to drive workflow progression.' },
+      ],
+      examTips: [
+        'Domain 5 = ~15% of exam.',
+        'Explicit escalation vs sentiment — know the difference cold.',
+        'PII redaction at tool boundaries, not at Claude level.',
+        'Never average conflicting stats. Present both with provenance.',
+      ],
+
+};
+
+export default domain5QuickRef;

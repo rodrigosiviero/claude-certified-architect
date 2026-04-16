@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 611.45 476" width="611.45" height="476" style="--bg:#1a1b26;--fg:#a9b1d6;--line:#3d59a1;--accent:#7aa2f7;--muted:#565f89;background:var(--bg)">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
+  text { font-family: 'Inter', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+    --_text:          var(--fg);
+    --_text-sec:      var(--muted, color-mix(in srgb, var(--fg) 60%, var(--bg)));
+    --_text-muted:    var(--muted, color-mix(in srgb, var(--fg) 40%, var(--bg)));
+    --_text-faint:    color-mix(in srgb, var(--fg) 25%, var(--bg));
+    --_line:          var(--line, color-mix(in srgb, var(--fg) 30%, var(--bg)));
+    --_arrow:         var(--accent, color-mix(in srgb, var(--fg) 50%, var(--bg)));
+    --_node-fill:     var(--surface, color-mix(in srgb, var(--fg) 3%, var(--bg)));
+    --_node-stroke:   var(--border, color-mix(in srgb, var(--fg) 20%, var(--bg)));
+    --_group-fill:    var(--bg);
+    --_group-hdr:     color-mix(in srgb, var(--fg) 5%, var(--bg));
+    --_inner-stroke:  color-mix(in srgb, var(--fg) 12%, var(--bg));
+    --_key-badge:     color-mix(in srgb, var(--fg) 10%, var(--bg));
+  }
+</style>
+<defs>
+  <marker id="arrowhead" markerWidth="8" markerHeight="4.8" refX="8" refY="2.4" orient="auto">
+    <polygon points="0 0, 8 2.4, 0 4.8" fill="var(--_arrow)" />
+  </marker>
+  <marker id="arrowhead-start" markerWidth="8" markerHeight="4.8" refX="0" refY="2.4" orient="auto-start-reverse">
+    <polygon points="8 0, 0 2.4, 8 4.8" fill="var(--_arrow)" />
+  </marker>
+</defs>
+<rect x="40" y="40" width="531.45" height="116" rx="0" ry="0" fill="var(--_group-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+<rect x="40" y="40" width="531.45" height="28" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+<text x="52" y="54" dy="0.35em" font-size="12" font-weight="600" fill="var(--_text-sec)">&quot;Traditional Test ❌&quot;</text>
+<rect x="40" y="140" width="531.45" height="296" rx="0" ry="0" fill="var(--_group-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+<rect x="40" y="140" width="531.45" height="28" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+<text x="52" y="154" dy="0.35em" font-size="12" font-weight="600" fill="var(--_text-sec)">&quot;AI Behavioral Test ✅&quot;</text>
+<polyline points="142.05,116 319.25,116" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="142.05,306 162.05,306 162.05,216 262.04999999999995,216" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="142.05,306 162.05,306 162.05,276 301.375,276" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="142.05,306 162.05,306 162.05,336 308.525,336" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="142.05,306 162.05,306 162.05,396 294.225,396" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<rect x="60" y="98" width="82.05000000000001" height="36" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<rect x="319.25" y="98" width="175" height="36" rx="0" ry="0" fill="#ef4444" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<rect x="60" y="288" width="82.05000000000001" height="36" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<rect x="262.04999999999995" y="198" width="289.40000000000003" height="36" rx="0" ry="0" fill="#10b981" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<rect x="301.375" y="258" width="210.75000000000003" height="36" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<rect x="308.525" y="318" width="196.45000000000002" height="36" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<rect x="294.225" y="378" width="225.05" height="36" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<text x="101.025" y="116" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="var(--_text)">Input X</text>
+<text x="406.75" y="116" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="#fff">Assert output == &quot;Y&quot;</text>
+<text x="101.025" y="306" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="var(--_text)">Input X</text>
+<text x="406.75" y="216" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="#fff">Assert output mentions refund policy</text>
+<text x="406.75" y="276" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="var(--_text)">Assert output &lt; 200 words</text>
+<text x="406.75" y="336" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="var(--_text)">Assert no PII in output</text>
+<text x="406.75" y="396" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="var(--_text)">Assert valid JSON structure</text>
+</svg>

@@ -1,0 +1,11 @@
+flowchart LR
+    P[Prompt Change] --> CI[CI: Run eval suite]
+    CI -->|Scores drop| X[Block merge]
+    CI -->|Scores pass| ST[Staging: adversarial tests]
+    ST --> CA[Canary: 5% traffic]
+    CA -->|Metrics degrade| RB[Auto-rollback]
+    CA -->|Metrics stable| PR[Production: 100%]
+
+    style X fill:#ef4444,color:#fff
+    style RB fill:#ef4444,color:#fff
+    style PR fill:#10b981,color:#fff

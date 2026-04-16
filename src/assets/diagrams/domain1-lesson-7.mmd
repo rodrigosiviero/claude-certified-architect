@@ -1,0 +1,13 @@
+flowchart TD
+    S[Session grows with each turn] --> T{Context size OK?}
+    T -->|Yes| C[Continue normally]
+    T -->|No| D{Still valid?}
+    D -->|Yes, < 24h old| R[Resume with --resume flag]
+    D -->|No, stale| F[Fresh session + inject summary]
+    
+    R --> C
+    F --> C
+
+    style T fill:#f59e0b,color:#fff
+    style D fill:#8b5cf6,color:#fff
+    style C fill:#10b981,color:#fff

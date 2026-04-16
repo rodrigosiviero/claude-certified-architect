@@ -1,0 +1,12 @@
+flowchart LR
+    S["📸 Capture screen"] --> A["🧠 Claude analyzes image"]
+    A --> D["Decide action<br/>(click/type/scroll)"]
+    D --> E["⚙️ Execute action"]
+    E --> L["🔄 Take new screenshot"]
+    L --> S
+
+    style S fill:#3b82f6,color:#fff
+    style A fill:#8b5cf6,color:#fff
+    style D fill:#f59e0b,color:#fff
+    style E fill:#10b981,color:#fff
+    style L fill:#64748b,color:#fff

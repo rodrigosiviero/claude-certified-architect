@@ -1,0 +1,13 @@
+flowchart TD
+    R[Incoming Request] --> L{Rate Limit Check}
+    L -->|Under limit| P[Process normally]
+    L -->|Over limit| Q{Circuit Breaker State}
+    Q -->|Closed| C[Queue request]
+    Q -->|Open| X[Return 429 + Retry-After]
+    Q -->|Half-Open| T[Try one request]
+    T -->|Success| P
+    T -->|Fail| X
+
+    style L fill:#f59e0b,color:#fff
+    style X fill:#ef4444,color:#fff
+    style P fill:#10b981,color:#fff

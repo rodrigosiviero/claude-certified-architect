@@ -1,0 +1,9 @@
+flowchart LR
+    U[User Input] --> C[Claude + JSON mode]
+    C --> P{Valid JSON?}
+    P -->|Yes| D[Parse and use]
+    P -->|No - rare| R[Retry with validation error]
+    R --> C
+
+    style C fill:#3b82f6,color:#fff
+    style D fill:#10b981,color:#fff

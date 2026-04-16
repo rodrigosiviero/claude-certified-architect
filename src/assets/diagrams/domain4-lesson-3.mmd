@@ -1,0 +1,15 @@
+flowchart LR
+    subgraph "Token Cost Formula"
+        I[Input Tokens x Price] --> T[Total Cost]
+        O[Output Tokens x Price] --> T
+    end
+
+    subgraph "Biggest Savings"
+        S1["✅ Prompt caching"]
+        S2["✅ Tiered models"]
+        S3["✅ Context pruning"]
+        S4["✅ App-level caching"]
+    end
+
+    style S1 fill:#10b981,color:#fff
+    style S2 fill:#10b981,color:#fff

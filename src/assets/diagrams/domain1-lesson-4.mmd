@@ -1,0 +1,10 @@
+stateDiagram-v2
+    [*] --> IDLE
+    IDLE --> CUSTOMER_VERIFIED: get_customer success
+    CUSTOMER_VERIFIED --> ORDER_FOUND: get_order success
+    ORDER_FOUND --> REFUND_CHECKED: check_return_window (within policy)
+    REFUND_CHECKED --> REFUND_PROCESSED: process_refund
+    REFUND_PROCESSED --> [*]
+
+    IDLE --> BLOCKED: process_refund without verification
+    BLOCKED --> IDLE: Error: prerequisites not met

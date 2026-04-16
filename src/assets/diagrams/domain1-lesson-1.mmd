@@ -1,0 +1,14 @@
+flowchart TD
+    A[Send message + tools to Claude] --> B[Claude responds]
+    B --> C{stop_reason?}
+    C -->|tool_use| D[Execute ALL tool_use blocks]
+    D --> E[Append tool_results to messages]
+    E --> A
+    C -->|end_turn| F[Done! Return response]
+    C -->|max_turns reached| G[Safety stop]
+    G --> F
+
+    style A fill:#3b82f6,color:#fff
+    style C fill:#f59e0b,color:#fff
+    style F fill:#10b981,color:#fff
+    style G fill:#ef4444,color:#fff

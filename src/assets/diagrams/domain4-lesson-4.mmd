@@ -1,0 +1,16 @@
+flowchart TD
+    A[Attacker] -->|Prompt injection| B{Input Validation}
+    A -->|Data extraction| C{Access Controls}
+    A -->|Tool misuse| D{PreToolUse Hooks}
+    
+    B -->|Block| E[Blocked + logged]
+    C -->|Deny| E
+    D -->|Block| E
+
+    B -->|Pass| F[Claude + sanitized input]
+    C -->|Allow| F
+    D -->|Allow| G[Execute with least privilege]
+
+    style E fill:#ef4444,color:#fff
+    style F fill:#3b82f6,color:#fff
+    style G fill:#10b981,color:#fff

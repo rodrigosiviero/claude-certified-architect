@@ -1,0 +1,14 @@
+flowchart LR
+    subgraph "Traditional Test ❌"
+        A1[Input X] --> B1[Assert output == "Y"]
+    end
+
+    subgraph "AI Behavioral Test ✅"
+        A2[Input X] --> B2[Assert output mentions refund policy]
+        A2 --> C2[Assert output < 200 words]
+        A2 --> D2[Assert no PII in output]
+        A2 --> E2[Assert valid JSON structure]
+    end
+
+    style B1 fill:#ef4444,color:#fff
+    style B2 fill:#10b981,color:#fff

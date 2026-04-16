@@ -1,0 +1,10 @@
+flowchart LR
+    R[Raw Document] --> E[Extract text]
+    E --> C[Clean boilerplate]
+    C --> S[Structure: headings, tables, lists]
+    S --> K[Chunk for embedding]
+    K --> M[Add metadata: source, page, section]
+    M --> V[Vector DB]
+
+    style R fill:#ef4444,color:#fff
+    style V fill:#10b981,color:#fff

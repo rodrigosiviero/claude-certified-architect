@@ -1,0 +1,15 @@
+flowchart LR
+    C[Claude requests tool] --> P{PreToolUse Hook}
+    P -->|Block| X[Return error to Claude]
+    P -->|Modify| M[Changed parameters]
+    P -->|Allow| E[Execute tool]
+    M --> E
+    E --> Q{PostToolUse Hook}
+    Q -->|Transform| T[Modified result]
+    Q -->|Allow| R[Original result]
+    T --> F[Return to Claude]
+    R --> F
+
+    style P fill:#f59e0b,color:#fff
+    style Q fill:#10b981,color:#fff
+    style X fill:#ef4444,color:#fff

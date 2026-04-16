@@ -1,0 +1,12 @@
+flowchart LR
+    D[Tool Definition] -->|name| N["get_weather"]
+    D -->|description| DESC["Get current weather for a city"]
+    D -->|input_schema| S["{city: string, unit: celsius|fahrenheit}"]
+    N --> C[Claude reads + decides]
+    DESC --> C
+    S --> C
+    C --> R["tool_use: get_weather(city=SF)"]
+
+    style D fill:#3b82f6,color:#fff
+    style C fill:#f59e0b,color:#fff
+    style R fill:#10b981,color:#fff

@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 511.2 770.8" width="511.2" height="770.8" style="--bg:#1a1b26;--fg:#a9b1d6;--line:#3d59a1;--accent:#7aa2f7;--muted:#565f89;background:var(--bg)">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
+  text { font-family: 'Inter', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+    --_text:          var(--fg);
+    --_text-sec:      var(--muted, color-mix(in srgb, var(--fg) 60%, var(--bg)));
+    --_text-muted:    var(--muted, color-mix(in srgb, var(--fg) 40%, var(--bg)));
+    --_text-faint:    color-mix(in srgb, var(--fg) 25%, var(--bg));
+    --_line:          var(--line, color-mix(in srgb, var(--fg) 30%, var(--bg)));
+    --_arrow:         var(--accent, color-mix(in srgb, var(--fg) 50%, var(--bg)));
+    --_node-fill:     var(--surface, color-mix(in srgb, var(--fg) 3%, var(--bg)));
+    --_node-stroke:   var(--border, color-mix(in srgb, var(--fg) 20%, var(--bg)));
+    --_group-fill:    var(--bg);
+    --_group-hdr:     color-mix(in srgb, var(--fg) 5%, var(--bg));
+    --_inner-stroke:  color-mix(in srgb, var(--fg) 12%, var(--bg));
+    --_key-badge:     color-mix(in srgb, var(--fg) 10%, var(--bg));
+  }
+</style>
+<defs>
+  <marker id="arrowhead" markerWidth="8" markerHeight="4.8" refX="8" refY="2.4" orient="auto">
+    <polygon points="0 0, 8 2.4, 0 4.8" fill="var(--_arrow)" />
+  </marker>
+  <marker id="arrowhead-start" markerWidth="8" markerHeight="4.8" refX="0" refY="2.4" orient="auto-start-reverse">
+    <polygon points="8 0, 0 2.4, 8 4.8" fill="var(--_arrow)" />
+  </marker>
+</defs>
+<polyline points="280.625,76 280.625,116" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="280.625,152 280.625,192" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="280.625,228 280.625,268" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="280.625,304 280.625,344" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="280.625,380 280.625,420" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="280.625,456 280.625,496" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="242.78062851782363,599.9556285178236 242.78062851782363,666.3 166.825,666.3 166.825,694.8" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="318.46937148217637,599.9556285178236 318.46937148217637,666.3 394.425,666.3 394.425,694.8" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<rect x="150.245" y="652.8" width="33.16" height="27" rx="4" ry="4" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="0.5" />
+<text x="166.825" y="666.3" text-anchor="middle" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">Yes</text>
+<rect x="380.705" y="652.8" width="27.44" height="27" rx="4" ry="4" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="0.5" />
+<text x="394.425" y="666.3" text-anchor="middle" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">No</text>
+<rect x="178.825" y="40" width="203.60000000000002" height="36" rx="0" ry="0" fill="#3b82f6" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<rect x="200.27499999999998" y="116" width="160.70000000000002" height="36" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<rect x="193.125" y="192" width="175" height="36" rx="0" ry="0" fill="#f59e0b" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<rect x="196.7" y="268" width="167.85000000000002" height="36" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<rect x="160.95" y="344" width="239.35000000000002" height="36" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<rect x="203.85" y="420" width="153.55" height="36" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<polygon points="280.625,496 351.525,566.9 280.625,637.8 209.725,566.9" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<rect x="39.999999999999986" y="694.8" width="253.65" height="36" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<rect x="317.65" y="694.8" width="153.55" height="36" rx="0" ry="0" fill="#10b981" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<text x="280.625" y="58" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="#fff">Test Set: 20-50 examples</text>
+<text x="280.625" y="134" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="var(--_text)">Run current prompt</text>
+<text x="280.625" y="210" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="#fff">Score against rubric</text>
+<text x="280.625" y="286" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="var(--_text)">Identify weak areas</text>
+<text x="280.625" y="362" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="var(--_text)">Improve prompt for weak areas</text>
+<text x="280.625" y="438" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="var(--_text)">Re-run evaluation</text>
+<text x="280.625" y="566.9" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="var(--_text)">Regressions?</text>
+<text x="166.825" y="712.8" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="var(--_text)">Revert + try different approach</text>
+<text x="394.42499999999995" y="712.8" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="#fff">Deploy new prompt</text>
+</svg>

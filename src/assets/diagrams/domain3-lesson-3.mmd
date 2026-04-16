@@ -1,0 +1,14 @@
+graph LR
+    subgraph "Context Budget (200K tokens)"
+        SP["System Prompt<br/>1-5K"]
+        TD["Tool Defs<br/>1-10K"]
+        RC["RAG Context<br/>10-50K"]
+        CH["Conversation History<br/>GROWS every turn"]
+        CR["Claude Response<br/>1-4K"]
+    end
+
+    CH -->|Turn 50| OVER["⚠️ 100K+ tokens!"]
+
+    style SP fill:#3b82f6,color:#fff
+    style CH fill:#f59e0b,color:#fff
+    style OVER fill:#ef4444,color:#fff

@@ -1,0 +1,14 @@
+flowchart TB
+    U[User Query] --> O[Orchestrator Agent]
+    O -->|Route| A[Refund Agent]
+    O -->|Route| B[Shipping Agent]
+    O -->|Route| C[Tech Support Agent]
+    A -->|Result| O
+    B -->|Result| O
+    C -->|Result| O
+    O -->|Synthesized answer| U
+
+    style O fill:#3b82f6,color:#fff
+    style A fill:#10b981,color:#fff
+    style B fill:#10b981,color:#fff
+    style C fill:#10b981,color:#fff

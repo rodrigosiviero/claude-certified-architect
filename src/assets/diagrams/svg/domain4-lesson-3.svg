@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 525.65 536" width="525.65" height="536" style="--bg:#1a1b26;--fg:#a9b1d6;--line:#3d59a1;--accent:#7aa2f7;--muted:#565f89;background:var(--bg)">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
+  text { font-family: 'Inter', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+    --_text:          var(--fg);
+    --_text-sec:      var(--muted, color-mix(in srgb, var(--fg) 60%, var(--bg)));
+    --_text-muted:    var(--muted, color-mix(in srgb, var(--fg) 40%, var(--bg)));
+    --_text-faint:    color-mix(in srgb, var(--fg) 25%, var(--bg));
+    --_line:          var(--line, color-mix(in srgb, var(--fg) 30%, var(--bg)));
+    --_arrow:         var(--accent, color-mix(in srgb, var(--fg) 50%, var(--bg)));
+    --_node-fill:     var(--surface, color-mix(in srgb, var(--fg) 3%, var(--bg)));
+    --_node-stroke:   var(--border, color-mix(in srgb, var(--fg) 20%, var(--bg)));
+    --_group-fill:    var(--bg);
+    --_group-hdr:     color-mix(in srgb, var(--fg) 5%, var(--bg));
+    --_inner-stroke:  color-mix(in srgb, var(--fg) 12%, var(--bg));
+    --_key-badge:     color-mix(in srgb, var(--fg) 10%, var(--bg));
+  }
+</style>
+<defs>
+  <marker id="arrowhead" markerWidth="8" markerHeight="4.8" refX="8" refY="2.4" orient="auto">
+    <polygon points="0 0, 8 2.4, 0 4.8" fill="var(--_arrow)" />
+  </marker>
+  <marker id="arrowhead-start" markerWidth="8" markerHeight="4.8" refX="0" refY="2.4" orient="auto-start-reverse">
+    <polygon points="8 0, 0 2.4, 8 4.8" fill="var(--_arrow)" />
+  </marker>
+</defs>
+<rect x="40" y="40" width="445.65" height="176" rx="0" ry="0" fill="var(--_group-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+<rect x="40" y="40" width="445.65" height="28" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+<text x="52" y="54" dy="0.35em" font-size="12" font-weight="600" fill="var(--_text-sec)">&quot;Token Cost Formula&quot;</text>
+<rect x="39.999999999999986" y="200" width="222.15" height="296" rx="0" ry="0" fill="var(--_group-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+<rect x="39.999999999999986" y="200" width="222.15" height="28" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+<text x="51.999999999999986" y="214" dy="0.35em" font-size="12" font-weight="600" fill="var(--_text-sec)">&quot;Biggest Savings&quot;</text>
+<polyline points="238.575,116 413.9,116 413.9,128" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="242.14999999999998,176 413.9,176 413.9,164" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<rect x="63.57499999999999" y="98" width="175" height="36" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<rect x="362.15" y="128" width="103.5" height="36" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<rect x="59.999999999999986" y="158" width="182.15" height="36" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<rect x="70.72499999999998" y="258" width="160.70000000000002" height="36" rx="0" ry="0" fill="#10b981" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<rect x="74.29999999999998" y="318" width="153.55" height="36" rx="0" ry="0" fill="#10b981" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<rect x="67.14999999999998" y="378" width="167.85000000000002" height="36" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<rect x="59.999999999999986" y="438" width="182.15" height="36" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<text x="151.075" y="116" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="var(--_text)">Input Tokens x Price</text>
+<text x="413.9" y="146" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="var(--_text)">Total Cost</text>
+<text x="151.075" y="176" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="var(--_text)">Output Tokens x Price</text>
+<text x="151.075" y="276" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="#fff">&quot;✅ Prompt caching&quot;</text>
+<text x="151.075" y="336" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="#fff">&quot;✅ Tiered models&quot;</text>
+<text x="151.075" y="396" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="var(--_text)">&quot;✅ Context pruning&quot;</text>
+<text x="151.075" y="456" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="var(--_text)">&quot;✅ App-level caching&quot;</text>
+</svg>

@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1308.05 138" width="1308.05" height="138" style="--bg:#1a1b26;--fg:#a9b1d6;--line:#3d59a1;--accent:#7aa2f7;--muted:#565f89;background:var(--bg)">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
+  text { font-family: 'Inter', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+    --_text:          var(--fg);
+    --_text-sec:      var(--muted, color-mix(in srgb, var(--fg) 60%, var(--bg)));
+    --_text-muted:    var(--muted, color-mix(in srgb, var(--fg) 40%, var(--bg)));
+    --_text-faint:    color-mix(in srgb, var(--fg) 25%, var(--bg));
+    --_line:          var(--line, color-mix(in srgb, var(--fg) 30%, var(--bg)));
+    --_arrow:         var(--accent, color-mix(in srgb, var(--fg) 50%, var(--bg)));
+    --_node-fill:     var(--surface, color-mix(in srgb, var(--fg) 3%, var(--bg)));
+    --_node-stroke:   var(--border, color-mix(in srgb, var(--fg) 20%, var(--bg)));
+    --_group-fill:    var(--bg);
+    --_group-hdr:     color-mix(in srgb, var(--fg) 5%, var(--bg));
+    --_inner-stroke:  color-mix(in srgb, var(--fg) 12%, var(--bg));
+    --_key-badge:     color-mix(in srgb, var(--fg) 10%, var(--bg));
+  }
+</style>
+<defs>
+  <marker id="arrowhead" markerWidth="8" markerHeight="4.8" refX="8" refY="2.4" orient="auto">
+    <polygon points="0 0, 8 2.4, 0 4.8" fill="var(--_arrow)" />
+  </marker>
+  <marker id="arrowhead-start" markerWidth="8" markerHeight="4.8" refX="0" refY="2.4" orient="auto-start-reverse">
+    <polygon points="8 0, 0 2.4, 8 4.8" fill="var(--_arrow)" />
+  </marker>
+</defs>
+<polyline points="207.85000000000002,78 227.85000000000002,78 227.85000000000002,58 247.85000000000002,58" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="465.75,58 505.74999999999994,58" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="816.5999999999999,58 856.6000000000001,58" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="1024.45,58 1166.25,58 1166.25,60" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="1064.45,78 1044.45,78 1044.45,98 123.92500000000001,98 123.92500000000001,96" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<rect x="40" y="60" width="167.85000000000002" height="36" rx="0" ry="0" fill="#3b82f6" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<rect x="247.85000000000002" y="40" width="217.9" height="36" rx="0" ry="0" fill="#8b5cf6" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<rect x="505.74999999999994" y="40" width="310.85" height="36" rx="0" ry="0" fill="#f59e0b" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<rect x="856.6000000000001" y="40" width="167.85000000000002" height="36" rx="0" ry="0" fill="#10b981" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<rect x="1064.45" y="60" width="203.60000000000002" height="36" rx="0" ry="0" fill="#64748b" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<text x="123.92500000000001" y="78" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="#fff">&quot;📸 Capture screen&quot;</text>
+<text x="356.8" y="58" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="#fff">&quot;🧠 Claude analyzes image&quot;</text>
+<text x="661.175" y="58" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="#fff">&quot;Decide action&lt;br/&gt;(click/type/scroll)&quot;</text>
+<text x="940.5250000000001" y="58" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="#fff">&quot;⚙️ Execute action&quot;</text>
+<text x="1166.25" y="78" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="#fff">&quot;🔄 Take new screenshot&quot;</text>
+</svg>

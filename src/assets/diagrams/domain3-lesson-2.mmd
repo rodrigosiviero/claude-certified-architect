@@ -1,0 +1,10 @@
+flowchart LR
+    D[Documents] -->|Split & embed| V[Vector DB]
+    Q[User Query] -->|Embed| S[Similarity Search]
+    V --> S
+    S -->|Top K chunks| C[Claude + retrieved context]
+    C --> A[Grounded answer]
+
+    style V fill:#8b5cf6,color:#fff
+    style S fill:#f59e0b,color:#fff
+    style C fill:#3b82f6,color:#fff

@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 937.875 768.4" width="937.875" height="768.4" style="--bg:#1a1b26;--fg:#a9b1d6;--line:#3d59a1;--accent:#7aa2f7;--muted:#565f89;background:var(--bg)">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
+  text { font-family: 'Inter', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+    --_text:          var(--fg);
+    --_text-sec:      var(--muted, color-mix(in srgb, var(--fg) 60%, var(--bg)));
+    --_text-muted:    var(--muted, color-mix(in srgb, var(--fg) 40%, var(--bg)));
+    --_text-faint:    color-mix(in srgb, var(--fg) 25%, var(--bg));
+    --_line:          var(--line, color-mix(in srgb, var(--fg) 30%, var(--bg)));
+    --_arrow:         var(--accent, color-mix(in srgb, var(--fg) 50%, var(--bg)));
+    --_node-fill:     var(--surface, color-mix(in srgb, var(--fg) 3%, var(--bg)));
+    --_node-stroke:   var(--border, color-mix(in srgb, var(--fg) 20%, var(--bg)));
+    --_group-fill:    var(--bg);
+    --_group-hdr:     color-mix(in srgb, var(--fg) 5%, var(--bg));
+    --_inner-stroke:  color-mix(in srgb, var(--fg) 12%, var(--bg));
+    --_key-badge:     color-mix(in srgb, var(--fg) 10%, var(--bg));
+  }
+</style>
+<defs>
+  <marker id="arrowhead" markerWidth="8" markerHeight="4.8" refX="8" refY="2.4" orient="auto">
+    <polygon points="0 0, 8 2.4, 0 4.8" fill="var(--_arrow)" />
+  </marker>
+  <marker id="arrowhead-start" markerWidth="8" markerHeight="4.8" refX="0" refY="2.4" orient="auto-start-reverse">
+    <polygon points="8 0, 0 2.4, 8 4.8" fill="var(--_arrow)" />
+  </marker>
+</defs>
+<polyline points="464.725,76 464.725,116" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="427.4953728855414,242.02037288554143 427.4953728855414,307.75 372.375,307.75 372.375,336.25" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="501.9546271144586,242.02037288554143 501.9546271144586,307.75 557.075,307.75 557.075,336.25" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="557.075,372.25 557.075,400.75 319.34999999999997,400.75 319.34999999999997,447.12500000000006" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="269.1982726277942,567.3732726277943 269.1982726277942,663.9 131.075,663.9 131.075,692.4" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="319.34999999999997,617.5250000000001 319.34999999999997,692.4" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="365.58175458416616,571.2932454158339 365.58175458416616,663.9 475.45,663.9 475.45,692.4" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="557.075,372.25 557.075,400.75 794.8,400.75 794.8,429.25" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="738.290126609442,578.8901266094421 738.290126609442,663.9 635.125,663.9 635.125,692.4" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="794.8,635.4000000000001 794.8,692.4" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<rect x="350.075" y="294.25" width="44.6" height="27" rx="4" ry="4" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="0.5" />
+<text x="372.375" y="307.75" text-anchor="middle" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">Block</text>
+<rect x="534.7750000000001" y="294.25" width="44.6" height="27" rx="4" ry="4" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="0.5" />
+<text x="557.075" y="307.75" text-anchor="middle" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">Allow</text>
+<rect x="97.33499999999998" y="650.4" width="67.48" height="27" rx="4" ry="4" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="0.5" />
+<text x="131.075" y="663.9" text-anchor="middle" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">PII found</text>
+<rect x="291.33" y="650.4" width="56.04" height="27" rx="4" ry="4" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="0.5" />
+<text x="319.34999999999997" y="663.9" text-anchor="middle" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">Harmful</text>
+<rect x="456.01" y="650.4" width="38.88" height="27" rx="4" ry="4" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="0.5" />
+<text x="475.45" y="663.9" text-anchor="middle" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">Safe</text>
+<rect x="763.92" y="387.25" width="61.760000000000005" height="27" rx="4" ry="4" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="0.5" />
+<text x="794.8" y="400.75" text-anchor="middle" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">tool_use</text>
+<rect x="601.385" y="650.4" width="67.48" height="27" rx="4" ry="4" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="0.5" />
+<text x="635.125" y="663.9" text-anchor="middle" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">Dangerous</text>
+<rect x="775.3599999999999" y="650.4" width="38.88" height="27" rx="4" ry="4" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="0.5" />
+<text x="794.8" y="663.9" text-anchor="middle" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">Safe</text>
+<rect x="405.82500000000005" y="40" width="117.80000000000001" height="36" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<polygon points="464.725,116 546.35,197.625 464.725,279.25 383.1,197.625" fill="#ef4444" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<rect x="263.425" y="336.25" width="217.9" height="36" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<rect x="505.32500000000005" y="336.25" width="103.5" height="36" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<polygon points="319.34999999999997,447.12500000000006 404.54999999999995,532.325 319.34999999999997,617.5250000000001 234.14999999999998,532.325" fill="#f59e0b" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<rect x="39.999999999999986" y="692.4" width="182.15" height="36" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<rect x="246.14999999999998" y="692.4" width="146.4" height="36" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<rect x="416.54999999999995" y="692.4" width="117.80000000000001" height="36" rx="0" ry="0" fill="#10b981" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<polygon points="794.8,429.25000000000006 897.875,532.325 794.8,635.4000000000001 691.7249999999999,532.325" fill="#8b5cf6" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<rect x="558.35" y="692.4" width="153.55" height="36" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<rect x="735.9" y="692.4" width="117.80000000000001" height="36" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<text x="464.725" y="58" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="var(--_text)">User Message</text>
+<text x="464.725" y="197.625" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="#fff">Input Guardrail</text>
+<text x="372.375" y="354.25" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="var(--_text)">&quot;Return: policy violation&quot;</text>
+<text x="557.075" y="354.25" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="var(--_text)">Claude API</text>
+<text x="319.34999999999997" y="532.325" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="#fff">Output Guardrail</text>
+<text x="131.075" y="710.4" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="var(--_text)">Redact sensitive data</text>
+<text x="319.34999999999997" y="710.4" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="var(--_text)">&quot;Block response&quot;</text>
+<text x="475.44999999999993" y="710.4" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="#fff">Show to user</text>
+<text x="794.8" y="532.325" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="#fff">Tool Guardrail / Hook</text>
+<text x="635.125" y="710.4" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="var(--_text)">&quot;Block execution&quot;</text>
+<text x="794.8" y="710.4" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="var(--_text)">Execute tool</text>
+</svg>

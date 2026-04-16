@@ -1,0 +1,12 @@
+flowchart TD
+    G[Golden Test Set] --> R[Run prompt against all inputs]
+    R --> S[Score with rubric]
+    S --> J["LLM-as-Judge<br/>(cheaper model grades output)"]
+    J --> D[Dashboard: accuracy, completeness, safety]
+    D -->|Below threshold| A[Alert + block deployment]
+    D -->|Above threshold| M[Merge + deploy]
+
+    style J fill:#8b5cf6,color:#fff
+    style D fill:#3b82f6,color:#fff
+    style A fill:#ef4444,color:#fff
+    style M fill:#10b981,color:#fff

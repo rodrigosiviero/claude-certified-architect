@@ -1,0 +1,21 @@
+flowchart LR
+    subgraph What to Log
+        A[API calls: tokens, latency, cost]
+        B[Tool executions: params, results]
+        C[User interactions: messages, feedback]
+    end
+
+    subgraph Metrics
+        D[Quality: hallucination rate, completion rate]
+        E[Performance: response time, turns/session]
+        F[Cost: per session, per user, total]
+    end
+
+    A --> G[Dashboard + Alerts]
+    B --> G
+    C --> G
+    D --> G
+    E --> G
+    F --> G
+
+    style G fill:#3b82f6,color:#fff

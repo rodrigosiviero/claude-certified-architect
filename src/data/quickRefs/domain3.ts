@@ -1,0 +1,88 @@
+import type { QuickRefData } from '../types';
+
+const domain3QuickRef: QuickRefData = {
+      domainLabel: 'Domain 3 — Claude Code Best Practices',
+      examWeight: '20% Exam Weight',
+      topTested: ['CLAUDE.md Hierarchy', 'context: fork', '-p Flag (CI)', 'Plan → Execute'],
+      sections: [
+        { title: '3.1 CLAUDE.md Hierarchy', points: [
+          '~/.claude/CLAUDE.md = personal preferences (NOT shared with team)',
+          '.claude/CLAUDE.md = team standards (Git-committed, shared)',
+          'directory/CLAUDE.md = scoped to subdirectory only',
+          'Use @import selectively — don\'t import everything',
+          'User level: personal coding style, preferred libraries, editor settings',
+          'Project level: coding standards, architecture decisions, team conventions',
+          'Directory level: framework-specific rules, test patterns, API conventions',
+          'Merge order: user → project → directory (later overrides earlier)',
+          '@import pulls in external files — use for shared configs across projects',
+        ] },
+        { title: '3.2 Commands & Skills', points: [
+          'Commands = in-session, always available (quick tasks)',
+          'Skills + context: fork = isolated sub-agent (verbose tasks)',
+          'Personal skill variants go in ~/.claude/skills/ with different names',
+          'CLAUDE.md = passive instructions (not executed on load)',
+          'Commands are ephemeral — defined in current session only',
+          'Skills persist across sessions — stored in .claude/skills/',
+          'context: fork creates an isolated subagent with its own context window',
+          'Use fork when the task is verbose and might pollute the main conversation',
+          'Personal skills override project skills when names conflict',
+        ] },
+        { title: '3.3 Path-Specific Rules', points: [
+          '.claude/rules/ with glob patterns for cross-directory conventions',
+          'One rule file covers ALL matching files (e.g., *.test.ts)',
+          'Only loads when editing matching files → context efficient',
+          'Rules are lazy-loaded — zero cost when not triggered',
+          'Glob patterns: *.py, src/**/*.ts, tests/**/* — be specific',
+          'Use for: linting rules, test conventions, import ordering, API patterns',
+          'Multiple rule files can match the same file — they all apply',
+          'Rules are additive, not exclusive — order doesn\'t matter',
+        ] },
+        { title: '3.4 Plan vs Execute', points: [
+          'Plan mode: investigate, NO changes made — read-only exploration',
+          'Direct execution: implement changes immediately',
+          'Canonical pattern: plan first → then execute',
+          'Explore sub-agent for verbose discovery without cluttering main context',
+          'Plan mode is safe — Claude can read files but won\'t write anything',
+          'Use plan mode when: unfamiliar codebase, complex change, uncertain scope',
+          'Use direct execution when: clear requirements, small scope, high confidence',
+          'Combine: plan → review plan → execute → verify is the safest workflow',
+        ] },
+        { title: '3.5 Iterative Refinement', points: [
+          'Provide concrete I/O examples, not abstract descriptions',
+          'Include exact error output — not paraphrased summaries',
+          'Interview pattern for unfamiliar domains (ask questions first)',
+          'Fix independent bugs sequentially, not in one shot',
+          '"Make it work, make it right, make it fast" — iterate in that order',
+          'Show Claude the actual input → expected output → current (wrong) output',
+          'For unfamiliar domains: start with "explain how X works" before "fix X"',
+          'Each iteration should have a clear success criterion — know when to stop',
+        ] },
+        { title: '3.6 CI/CD Integration', points: [
+          '-p flag is MANDATORY — no interactive mode in CI',
+          'Every session is stateless — no memory between runs',
+          'Separate gen and review sessions (never same session)',
+          'Include prior findings + existing test context in prompts',
+          'Document test fixtures and setup in CLAUDE.md so Claude knows the context',
+          'CI sessions have no access to previous conversation — inject everything needed',
+          'Use separate sessions: one generates code, another reviews it independently',
+          'Always provide the existing test suite context — Claude needs to match your patterns',
+          'Set clear exit criteria in the prompt — what constitutes "done" in CI',
+        ] },
+      ],
+      antiPatterns: [
+        { pattern: 'Team standards in user-level CLAUDE.md', reason: '~/.claude/ is personal, never shared. Team rules belong in .claude/ (project level).' },
+        { pattern: 'Using commands for verbose tasks', reason: 'Commands are for quick in-session tasks. Use skills with context: fork for isolated, verbose work.' },
+        { pattern: 'Missing -p flag in CI', reason: 'Without -p, Claude enters interactive mode and hangs. CI is non-interactive.' },
+        { pattern: 'Same session for generation and review', reason: 'Separate sessions prevent the reviewer from being biased by its own code.' },
+        { pattern: 'CI reviews without prior findings', reason: 'Stateless sessions have no memory. Always include prior findings in the prompt.' },
+      ],
+      examTips: [
+        'Domain 3 = 20% of your exam score.',
+        'Top 4: (1) CLAUDE.md hierarchy, (2) context: fork, (3) -p flag, (4) plan → execute.',
+        'Commands (in-session) vs skills+fork (isolated) — know when to use each.',
+        'CI is stateless. Prior findings must be injected every run.',
+      ],
+
+};
+
+export default domain3QuickRef;

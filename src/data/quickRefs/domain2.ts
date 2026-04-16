@@ -1,0 +1,85 @@
+import type { QuickRefData } from '../types';
+
+const domain2QuickRef: QuickRefData = {
+      domainLabel: 'Domain 2 — Tool Design & MCP Integration',
+      examWeight: '18% Exam Weight',
+      topTested: ['Tool Descriptions', 'isError Flag', '4-5 Tool Sweet Spot', 'MCP Config'],
+      sections: [
+        { title: '2.1 Effective Tool Interfaces', points: [
+          'Descriptions are the #1 lever for accurate tool selection',
+          'Include: purpose + format + examples + edge cases + "when NOT to use"',
+          'Invest 60% of tool design time on descriptions',
+          'Each tool description should answer: What does it do? What inputs does it need? What does it return?',
+          'Include at least one concrete example of input → output',
+          'Specify edge cases: empty inputs, invalid formats, rate limits, timeouts',
+          '"When NOT to use" prevents Claude from calling the wrong tool for similar-looking tasks',
+          'Differentiate similar tools explicitly — explain when to use each one',
+        ] },
+        { title: '2.2 Structured Error Responses', points: [
+          'isError: true is MANDATORY for all failures',
+          'Never return [] when an operation failed — Claude reads it as "no results"',
+          'Include: error category + message + recovery suggestions',
+          '"No results found" ≠ "search failed" — these are fundamentally different',
+          'Error categories: network_error, auth_error, not_found, rate_limited, validation_error',
+          'Always include a recovery suggestion — "try again in 30s" or "check your API key"',
+          'Successful operations with 0 results should have isError: false with an explanatory message',
+          'Log errors for debugging but never expose internal stack traces to Claude',
+        ] },
+        { title: '2.3 Tool Distribution & tool_choice', points: [
+          '4-5 tools per agent is the sweet spot',
+          'tool_choice: auto (Claude decides) | any (force tool call) | tool (force specific) | none (no tools)',
+          'For 15+ tools → add a router layer. For 50+ → semantic search',
+          'tool_choice "auto" = Claude picks best tool or no tool — default for most cases',
+          'tool_choice "any" = Claude MUST call at least one tool — forces action',
+          'tool_choice "tool" with name = Claude MUST call this specific tool — forced extraction',
+          'tool_choice "none" = Claude must NOT call tools — pure conversation/analysis',
+          'Accuracy degrades significantly beyond ~7 tools per agent — cluster into sub-agents instead',
+        ] },
+        { title: '2.4 MCP Server Integration', points: [
+          'Tools = actions (do something), Resources = data (read something), Prompts = templates (reusable)',
+          'Configure via .mcp.json with ${ENV_VAR} for secrets (never hardcode)',
+          'Runtime capability discovery — Claude learns available tools at startup',
+          'stdio transport = local process (most common for development)',
+          'SSE transport = remote server (for shared/team MCP servers)',
+          'MCP servers are isolated — they don\'t share state with each other',
+          'Server capabilities are advertised on connection — Claude adapts dynamically',
+          'Multiple MCP servers can coexist — each contributes its own tools/resources',
+        ] },
+        { title: '2.5 Built-in Tool Selection', points: [
+          'Read/Write/Edit/Bash/Grep/Glob/LS — know what each does',
+          'Edit for modifications, Write for new files. Always Read before Edit.',
+          'Safety tiers: free (Read) → caution (Edit) → confirm (Bash)',
+          'Read: safe, read-only, always allowed — no side effects',
+          'Write: creates new files or overwrites entirely — use for fresh files',
+          'Edit: surgical modifications to existing files — requires search pattern',
+          'Bash: most powerful, most dangerous — can run arbitrary commands',
+          'Grep/Glob: search tools — zero side effects, use freely for exploration',
+        ] },
+        { title: '2.6 Tool Search', points: [
+          'Embedding-based semantic selection, NOT keyword matching',
+          'Pre-compute tool embeddings for speed — don\'t compute at query time',
+          'Select top 4-5 per request based on query similarity',
+          'Re-rank by combining semantic similarity with usage frequency',
+          'Keyword search misses synonyms, context, and intent — embeddings capture meaning',
+          'Tool descriptions feed the embeddings — better descriptions = better search',
+          'For small catalogs (<10 tools), search isn\'t needed — Claude handles it',
+          'Monitor tool selection accuracy to tune your embedding model over time',
+        ] },
+      ],
+      antiPatterns: [
+        { pattern: 'Vague tool descriptions', reason: '"Search for things" is useless. Claude needs purpose, format, examples, and "when NOT to use."' },
+        { pattern: 'Returning [] on error', reason: 'Empty array with isError: false = success with no data. Claude will tell users "nothing found" when the search actually failed.' },
+        { pattern: 'Passing 20+ tools to an agent', reason: 'Accuracy drops sharply beyond 5 tools. Use a router or semantic search to narrow down.' },
+        { pattern: 'Hardcoded secrets in .mcp.json', reason: 'Use ${ENV_VAR} substitution. Config files get committed, shared, and logged.' },
+        { pattern: 'Keyword-based tool routing', reason: 'Use embedding similarity, not keyword matching. Keywords miss synonyms and context.' },
+      ],
+      examTips: [
+        'Domain 2 = 18% of your exam score.',
+        'Top 3: (1) Tool descriptions, (2) isError flag, (3) 4-5 tool count.',
+        'Know all 4 tool_choice modes cold — guaranteed question.',
+        'MCP: Tools vs Resources vs Prompts — know the difference.',
+      ],
+
+};
+
+export default domain2QuickRef;

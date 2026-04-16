@@ -1,0 +1,12 @@
+flowchart TB
+    H[MCP Host<br/>Your AI App] --> C[MCP Client]
+    C <-->|stdio| S1[GitHub MCP Server]
+    C <-->|HTTP/SSE| S2[Database MCP Server]
+    C <-->|stdio| S3[Filesystem MCP Server]
+    
+    S1 -->|tools| T1["create_issue, list_prs"]
+    S2 -->|tools| T2["query, insert"]
+    S3 -->|resources| T3["read_file, list_dir"]
+
+    style H fill:#3b82f6,color:#fff
+    style C fill:#f59e0b,color:#fff

@@ -1,0 +1,9 @@
+sequenceDiagram
+    participant Your Code
+    participant Claude API
+    
+    Your Code->>Claude API: messages + tools + system prompt
+    Claude API-->>Your Code: response with tool_use block (stop_reason: "tool_use")
+    Note over Your Code: Execute tool locally
+    Your Code->>Claude API: messages + tool_result (matching tool_use_id)
+    Claude API-->>Your Code: Final text response (stop_reason: "end_turn")

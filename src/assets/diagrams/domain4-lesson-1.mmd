@@ -1,0 +1,17 @@
+flowchart TD
+    U[User Message] --> I{Input Guardrail}
+    I -->|Block| X1["Return: policy violation"]
+    I -->|Allow| C[Claude API]
+    C --> O{Output Guardrail}
+    O -->|PII found| R[Redact sensitive data]
+    O -->|Harmful| X2["Block response"]
+    O -->|Safe| F[Show to user]
+    
+    C -->|tool_use| T{Tool Guardrail / Hook}
+    T -->|Dangerous| X3["Block execution"]
+    T -->|Safe| E[Execute tool]
+
+    style I fill:#ef4444,color:#fff
+    style O fill:#f59e0b,color:#fff
+    style T fill:#8b5cf6,color:#fff
+    style F fill:#10b981,color:#fff

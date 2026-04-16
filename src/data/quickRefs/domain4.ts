@@ -1,0 +1,86 @@
+import type { QuickRefData } from '../types';
+
+const domain4QuickRef: QuickRefData = {
+      domainLabel: 'Domain 4 — Prompt Engineering & Evaluation',
+      examWeight: '20% Exam Weight',
+      topTested: ['Explicit Criteria', 'Few-Shot Examples', 'Tool-use JSON', 'Separate Instances'],
+      sections: [
+        { title: '4.1 Explicit Criteria', points: [
+          'Categorical rules with concrete definitions: CRITICAL / WARNING / INFO',
+          '"CRITICAL: SQL injection" > "be conservative" — specificity wins',
+          '"When NOT to flag" is as important as "what to flag"',
+          'Define each category with examples: what qualifies, what doesn\'t, edge cases',
+          'Use action-oriented labels that tell Claude exactly what to do',
+          'Include severity levels and required actions per category',
+          'Test your criteria against ambiguous cases before deploying',
+          'Criteria should be unambiguous — if two people interpret differently, refine it',
+        ] },
+        { title: '4.2 Few-Shot Examples', points: [
+          '2-4 examples, not 20 — focus on AMBIGUOUS cases',
+          'Include reasoning: "Thought: ... Reason: ..." for each example',
+          'Positive AND negative examples teach understanding, not just patterns',
+          'Ambiguous cases are where few-shot adds the most value — obvious cases don\'t need examples',
+          'Each example should demonstrate a different edge case or boundary condition',
+          'Negative examples: "This is NOT X because..." — prevents over-flagging',
+          'Structure: Input → Analysis → Decision → Rationale → Action',
+          'Order matters: put the most representative example first',
+        ] },
+        { title: '4.3 Extended Thinking', points: [
+          'Private scratchpad for complex reasoning — not visible to tools',
+          'For: multi-step reasoning, math, analysis. Not for: classification, formatting',
+          'Set budget_tokens based on complexity level',
+          'Tradeoff: accuracy ↑ vs cost/latency ↑',
+          'budget_tokens controls how much "thinking" Claude does before answering',
+          'Low budget = fast but superficial. High budget = thorough but slow and expensive',
+          'Only use for tasks that genuinely benefit from multi-step reasoning',
+          'Don\'t use for: simple extraction, formatting, classification, lookup tasks',
+          'Extended thinking content is private to Claude — you see the final answer only',
+        ] },
+        { title: '4.4 Structured Output', points: [
+          'Tool use + JSON schema >> "respond in JSON" (prompt-based)',
+          'Force with tool_choice: { type: "tool", name: "..." }',
+          'Validation + retry for FORMAT errors only',
+          'Retries DON\'T fix MISSING info — more context does',
+          'JSON schema defines: required fields, types, enums, descriptions',
+          'tool_choice forces the output format — Claude can\'t deviate from the schema',
+          'Always validate the response against your schema — don\'t trust blindly',
+          'Retry up to 2-3 times for format errors, then fall back gracefully',
+          'If info is missing, add it to the prompt. Retrying the same prompt won\'t help.',
+        ] },
+        { title: '4.5 Metaprompt', points: [
+          'Show Claude: prompt + output + expected output → ask for improvements',
+          'Development-time optimization tool, NOT a production pattern',
+          '2-3 iterations typically sufficient for convergence',
+          'Pattern: "Here\'s my prompt, the output I got, and what I wanted. How can I improve the prompt?"',
+          'Claude is surprisingly good at critiquing and improving its own prompts',
+          'Use for: refining system prompts, improving tool descriptions, tuning criteria',
+          'Don\'t use in production — it\'s a one-time optimization technique',
+          'Convergence is fast — if 3 iterations don\'t help, the approach needs rethinking',
+        ] },
+        { title: '4.6 Multi-Instance Review', points: [
+          'Separate instances for generation and review — always',
+          'Multi-pass: local → integration → architecture review',
+          'Confidence routing, not blind trust in self-assessment',
+          'Feedback loops with SPECIFIC errors, not vague "fix this"',
+          'Local pass: individual function/method correctness',
+          'Integration pass: cross-component interactions and data flow',
+          'Architecture pass: overall design, performance, security considerations',
+          'Route by confidence: low → human review, medium → senior dev, high → auto-merge',
+          'Each review instance needs its own context — don\'t share the generation conversation',
+        ] },
+      ],
+      antiPatterns: [
+        { pattern: 'Vague instructions ("be careful")', reason: '"CRITICAL: SQL injection" tells Claude exactly what to flag. "Be conservative" tells it nothing.' },
+        { pattern: 'Same-session review', reason: 'Reviewer is biased by its own code generation. Always use separate instances.' },
+        { pattern: 'Trusting self-confidence scores', reason: 'Use confidence for routing, not trust. Low confidence → human review, high ≠ correct.' },
+        { pattern: 'Retrying for missing information', reason: 'Retries fix format errors. If info is missing, provide it in the prompt — retries won\'t create it.' },
+      ],
+      examTips: [
+        'Domain 4 = 20% of exam.',
+        'Explicit criteria > vague. Tool use + schema > prompt JSON. Separate instances > self-review.',
+        'Retries fix FORMAT, not ABSENCE. This distinction is tested.',
+      ],
+
+};
+
+export default domain4QuickRef;

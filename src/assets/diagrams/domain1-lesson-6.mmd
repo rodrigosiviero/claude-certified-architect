@@ -1,0 +1,23 @@
+flowchart TD
+    subgraph Prompt Chaining
+        A1[Research] --> A2[Analyze]
+        A2 --> A3[Draft]
+        A3 --> A4[Review]
+    end
+
+    subgraph Per-File Passes
+        B1[File 1: verify] --> B2[File 2: verify]
+        B2 --> B3[File 3: verify]
+        B3 --> B4[Cross-file check]
+    end
+
+    subgraph Dynamic Adaptive
+        C1[Explore codebase] --> C2{Found issue?}
+        C2 -->|Yes| C3[Fix and re-explore]
+        C2 -->|No| C4[Done]
+        C3 --> C2
+    end
+
+    style A1 fill:#3b82f6,color:#fff
+    style B1 fill:#10b981,color:#fff
+    style C1 fill:#8b5cf6,color:#fff

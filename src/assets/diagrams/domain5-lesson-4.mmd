@@ -1,0 +1,15 @@
+flowchart TD
+    BUG[Reported Issue] --> REP[Reproduce with exact input]
+    REP --> ISO{Isolate cause}
+    ISO -->|Prompt| P[Check prompt for ambiguity]
+    ISO -->|Tool| T[Check tool result quality]
+    ISO -->|Context| C[Check conversation history]
+    ISO -->|Model| M[Try different model]
+    
+    P --> FIX[Fix + regression test]
+    T --> FIX
+    C --> FIX
+    M --> FIX
+
+    style BUG fill:#ef4444,color:#fff
+    style FIX fill:#10b981,color:#fff

@@ -1,0 +1,10 @@
+flowchart LR
+    subgraph Bad Prompt
+        A1["Fix this code"] --> R1[Unclear what to fix]
+    end
+    subgraph Good Prompt
+        A2["Fix this Python function<br/>so it handles None inputs<br/>without changing return type<br/>Keep under 20 lines<br/>Include docstrings"] --> R2[Exact output needed]
+    end
+
+    style A1 fill:#ef4444,color:#fff
+    style A2 fill:#10b981,color:#fff

@@ -1,0 +1,19 @@
+flowchart TD
+    U[User Request] --> LB[Load Balancer]
+    LB --> W1[Worker 1]
+    LB --> W2[Worker 2]
+    LB --> W3[Worker N]
+    
+    W1 --> Q[Request Queue]
+    W2 --> Q
+    W3 --> Q
+    
+    Q --> API[Claude API]
+    
+    API -->|Error| RET[Retry with backoff]
+    RET -->|3x fail| FB[Fallback: cached / smaller model]
+    API -->|Success| RES[Return response]
+
+    style LB fill:#3b82f6,color:#fff
+    style FB fill:#f59e0b,color:#fff
+    style RES fill:#10b981,color:#fff

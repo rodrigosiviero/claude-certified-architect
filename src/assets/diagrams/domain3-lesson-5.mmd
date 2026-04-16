@@ -1,0 +1,13 @@
+flowchart TD
+    T[Test Set: 20-50 examples] --> R[Run current prompt]
+    R --> S[Score against rubric]
+    S --> I[Identify weak areas]
+    I --> P[Improve prompt for weak areas]
+    P --> R2[Re-run evaluation]
+    R2 --> C{Regressions?}
+    C -->|Yes| X[Revert + try different approach]
+    C -->|No| D[Deploy new prompt]
+
+    style T fill:#3b82f6,color:#fff
+    style S fill:#f59e0b,color:#fff
+    style D fill:#10b981,color:#fff

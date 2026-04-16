@@ -1,0 +1,17 @@
+flowchart LR
+    subgraph Without Caching
+        A1[System Prompt 5K] --> P1[Process all]
+        A2[Tools 3K] --> P1
+        A3[History 20K] --> P1
+        P1 --> C1[28K input tokens every call]
+    end
+
+    subgraph With Caching
+        B1["System Prompt 5K ✅ cached"] --> P2[Process only new]
+        B2["Tools 3K ✅ cached"] --> P2
+        B3[New message 1K] --> P2
+        P2 --> C2["1K fresh + 8K cached = much cheaper"]
+    end
+
+    style P1 fill:#ef4444,color:#fff
+    style P2 fill:#10b981,color:#fff

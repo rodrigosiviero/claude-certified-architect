@@ -1,0 +1,13 @@
+sequenceDiagram
+    participant O as Orchestrator
+    participant T as Task Tool
+    participant S as Subagent
+
+    O->>T: invoke("shipping_agent", task: "Check order ORD-789")
+    Note over T,S: Fresh conversation created
+    T->>S: System prompt + specific task only
+    S->>S: Runs own agentic loop
+    S->>S: May call tools multiple times
+    S-->>T: Returns result only
+    T-->>O: "Order shipped, arrives June 15"
+    Note over O: Appends result to main conversation

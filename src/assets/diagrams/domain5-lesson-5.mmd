@@ -1,0 +1,15 @@
+flowchart LR
+    subgraph "Where time is spent"
+        A["API call: 2-30s"]
+        B["Tool execution: 0.1-10s"]
+        C["Network: 0.05-0.5s"]
+    end
+
+    subgraph "Optimizations"
+        D["✅ Prompt caching"]
+        E["✅ Streaming"]
+        F["✅ Parallel tool execution"]
+        G["✅ Model tiering"]
+    end
+
+    style D fill:#10b981,color:#fff
