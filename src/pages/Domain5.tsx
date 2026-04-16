@@ -1069,7 +1069,7 @@ export default function Domain5() {
                   {'keyConcepts' in lesson && lesson.keyConcepts && lesson.keyConcepts.length > 0 && (
                     <div>
                       <h4 className="font-semibold text-slate-900 dark:text-white mb-3">Key Concepts</h4>
-                      <div className="grid grid-cols-2 gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         {lesson.keyConcepts.map((concept, i) => (
                           <div key={i} className="bg-rose-50 border border-rose-200 rounded-lg p-3">
                             <p className="font-medium text-rose-900 text-sm">{concept.concept}</p>

@@ -30,7 +30,7 @@ export default function Home() {
             <Award className="w-4 h-4 text-amber-400" />
             <span>Official Exam Guide Curriculum</span>
           </div>
-          <h1 className="text-5xl font-bold mb-4">
+          <h1 className="text-3xl sm:text-5xl font-bold mb-4">
             Claude Certified Architect
             <span className="block text-amber-400">Foundations</span>
           </h1>
@@ -91,7 +91,7 @@ export default function Home() {
       {/* Features */}
       <section>
         <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-6">What You Will Learn</h2>
-        <div className="grid grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
           {features.map((feature, index) => {
             const Icon = feature.icon;
             return (
@@ -115,7 +115,7 @@ export default function Home() {
             View All Details <ArrowRight className="w-4 h-4" />
           </Link>
         </div>
-        <div className="grid grid-cols-5 gap-4">
+        <div className="grid grid-cols-3 sm:grid-cols-5 gap-3 sm:gap-4">
           {domainPreview.map((domain) => (
             <Link to={`/domain/${domain.number}`} key={domain.number} className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4 text-center hover:shadow-md transition-all">
               <div className={`w-10 h-10 ${domain.color} rounded-lg mx-auto mb-3 flex items-center justify-center`}>

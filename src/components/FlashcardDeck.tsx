@@ -94,7 +94,7 @@ export default function FlashcardDeck() {
         <h2 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">Session Complete!</h2>
         <p className="text-slate-600 dark:text-slate-400 mb-8">You reviewed {cards.length} cards</p>
 
-        <div className="flex justify-center gap-8 mb-8">
+        <div className="flex justify-center gap-4 sm:gap-8 mb-6 sm:mb-8">
           <div className="text-center">
             <MinusCircle className="w-8 h-8 text-red-500 mx-auto mb-1" />
             <div className="text-2xl font-bold text-slate-900 dark:text-white">{hardCount}</div>
@@ -161,7 +161,7 @@ export default function FlashcardDeck() {
       {card && (
         <div className="flex justify-center mb-8">
           <div
-            className="w-full max-w-2xl cursor-pointer"
+            className="w-full max-w-2xl cursor-pointer px-2 px-2 px-2 px-2 px-2"
             style={{ perspective: '1000px' }}
             onClick={() => setFlipped(!flipped)}
           >
@@ -174,14 +174,14 @@ export default function FlashcardDeck() {
             >
               {/* Front */}
               <div
-                className="w-full rounded-2xl p-8 shadow-lg border"
+                className="w-full rounded-2xl p-5 sm:p-8 shadow-lg border"
                 style={{
                   backfaceVisibility: 'hidden',
                   backgroundColor: 'var(--card-bg, #fff)',
                   borderColor: `${domainColor}30`,
                 }}
               >
-                <div className="bg-white dark:bg-slate-900 rounded-2xl p-8 border border-slate-200 dark:border-slate-700">
+                <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 sm:p-8 border border-slate-200 dark:border-slate-700">
                   <div className="flex items-center gap-2 mb-4">
                     <div className="w-2 h-2 rounded-full" style={{ backgroundColor: domainColor }} />
                     <span className="text-xs font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wider">
@@ -199,14 +199,14 @@ export default function FlashcardDeck() {
 
               {/* Back */}
               <div
-                className="absolute inset-0 w-full rounded-2xl p-8 shadow-lg border"
+                className="absolute inset-0 w-full rounded-2xl p-5 sm:p-8 shadow-lg border"
                 style={{
                   backfaceVisibility: 'hidden',
                   transform: 'rotateY(180deg)',
                   borderColor: `${domainColor}30`,
                 }}
               >
-                <div className="bg-white dark:bg-slate-900 rounded-2xl p-8 border border-slate-200 dark:border-slate-700">
+                <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 sm:p-8 border border-slate-200 dark:border-slate-700">
                   <div className="flex items-center gap-2 mb-4">
                     <span className="text-xs font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wider">
                       Answer

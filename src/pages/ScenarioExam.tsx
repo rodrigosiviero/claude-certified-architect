@@ -93,7 +93,7 @@ export default function ScenarioExam() {
           <p className="text-amber-100">20 real-world scenarios testing your ability to make the right architectural decisions — not trivia memorization.</p>
         </div>
 
-        <div className="grid grid-cols-5 gap-3">
+        <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 sm:gap-3">
           {(Object.entries(domainMeta) as [Domain, typeof domainMeta.d1][]).map(([key, meta]) => (
             <div key={key} className={`${meta.bg} border ${meta.border} rounded-xl p-3 text-center`}>
               <p className={`text-xs font-semibold ${meta.color}`}>{meta.label.split(' ')[0]}</p>
@@ -276,7 +276,7 @@ export default function ScenarioExam() {
       </div>
 
       {/* Domain Scores */}
-      <div className="grid grid-cols-5 gap-3">
+      <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 sm:gap-3">
         {(Object.entries(domainMeta) as [Domain, typeof domainMeta.d1][]).map(([key, meta]) => {
           const ds = getDomainScore(key);
           if (ds.total === 0) return null;
