@@ -3,224 +3,302 @@ import type { LessonExplanation } from './types';
 export const domain4Explanations: LessonExplanation[] = [
   {
     id: '4-1',
-    explanation: `## Guardrails: Defense in Depth
+    explanation: `## Explicit Criteria
 
-Guardrails prevent Claude from going off the rails — hallucinating, leaking PII, executing harmful actions, or going off-topic.
+Vague instructions produce vague results. Explicit criteria with concrete definitions tell Claude exactly what to do.
 
 \`\`\`mermaid
-flowchart TD
-    U[User Message] --> I{Input Guardrail}
-    I -->|Block| X1["Return: policy violation"]
-    I -->|Allow| C[Claude API]
-    C --> O{Output Guardrail}
-    O -->|PII found| R[Redact sensitive data]
-    O -->|Harmful| X2["Block response"]
-    O -->|Safe| F[Show to user]
-    
-    C -->|tool_use| T{Tool Guardrail / Hook}
-    T -->|Dangerous| X3["Block execution"]
-    T -->|Safe| E[Execute tool]
+flowchart LR
+    subgraph "❌ Vague"
+        V1["'Be conservative'"]
+        V2["'Flag bad things'"]
+        V3["'Use your judgment'"]
+    end
+    subgraph "✅ Explicit"
+        E1["CRITICAL: SQL injection, XSS"]
+        E2["WARNING: Weak password"]
+        E3["INFO: Successful login"]
+    end
 
-    style I fill:#ef4444,color:#fff
-    style O fill:#f59e0b,color:#fff
-    style T fill:#8b5cf6,color:#fff
-    style F fill:#10b981,color:#fff
+    style V1 fill:#ef4444,color:#fff
+    style E1 fill:#10b981,color:#fff
 \`\`\`
 
-### Three Layers of Guardrails
+### Categorical Rules with Concrete Definitions
 
-| Layer | When | What it catches |
-|---|---|---|
-| **Input** | Before Claude sees the message | Off-topic requests, policy violations, prompt injection |
-| **Output** | After Claude responds, before user sees | PII leakage, harmful content, hallucinations |
-| **Tool** (Hooks) | Before/after tool execution | Dangerous operations, sensitive data in results |
+Define each category with:
+- **What qualifies** — exact conditions
+- **What doesn't** — explicit exclusions
+- **Edge cases** — boundary examples
+- **Required actions** — what Claude should do per category
 
-### Implementation Approaches
+| Category | Example Definition |
+|---|---|
+| **CRITICAL** | SQL injection, XSS, auth bypass → Block + alert |
+| **WARNING** | Weak password, missing HTTPS → Log + suggest fix |
+| **INFO** | Successful login, page view → Log only |
 
-- **Regex-based**: Fast, cheap, catches obvious patterns. Easy to bypass.
-- **Classifier-based**: Lightweight model classifies content. More nuanced.
-- **Claude-based**: Use a smaller Claude call to check safety. Most accurate, most expensive.
+### "When NOT to Flag" Matters
 
-### Defense in Depth
+\`"When NOT to flag"\` is as important as \`"what to flag."\` Without exclusions, Claude over-flags everything.
 
-No single guardrail is perfect. Layer them: input catches 80%, output catches 15% more, tool hooks catch the remaining 5%. **Fail-safe defaults** — when a guardrail triggers, block and explain, never silently allow.`,
+\`\`\`markdown
+# Good criteria
+Flag as CRITICAL: any user input containing SQL keywords (SELECT, DROP, INSERT)
+Do NOT flag: inputs from authenticated admin panel search (already sanitized)
+\`\`\`
+
+### Make Criteria Unambiguous
+
+If two people interpret a rule differently, **refine it**. Test against ambiguous cases before deploying.
+
+> 💡 **Exam tip:** Specificity wins. "CRITICAL: SQL injection" is always the correct answer over "be conservative" or "flag suspicious activity."`,
   },
   {
     id: '4-2',
-    explanation: `## Content Filtering Strategies
+    explanation: `## Few-Shot Examples
 
-Content filtering is a specific output guardrail focused on preventing inappropriate content.
+2-4 examples, not 20. Focus on the **ambiguous cases** — obvious cases don't need examples.
 
-### What to Filter
+\`\`\`mermaid
+flowchart LR
+    I["Input"] --> A["Analysis"]
+    A --> D["Decision"]
+    D --> R["Rationale"]
+    R --> Act["Action"]
 
-| Category | Examples |
-|---|---|
-| **PII** | SSN, credit cards, email addresses |
-| **Harmful content** | Violence, self-harm, illegal activities |
-| **Confidential** | Trade secrets, internal APIs |
-| **Off-topic** | Medical advice from a cooking bot |
+    style A fill:#3b82f6,color:#fff
+    style D fill:#f59e0b,color:#fff
+    style R fill:#8b5cf6,color:#fff
+\`\`\`
 
-### Redaction vs Blocking vs Regeneration
+### Structure Each Example
 
-| Strategy | When to use |
-|---|---|
-| **Redaction** | Replace PII with [REDACTED], show rest. Most of response is fine. |
-| **Blocking** | Do not show response at all. Entire response is problematic. |
-| **Regeneration** | Ask Claude to try again with filter feedback. Issue is minor. |
+\`\`\`
+Input: "DROP TABLE users; --"
+Thought: SQL keywords detected in user input
+Reason: Matches SQL injection pattern with table drop + comment terminator
+Decision: CRITICAL
+Action: Block request, alert security team
+\`\`\`
 
-### Prompt Injection Prevention
+### Positive AND Negative Examples
 
-The biggest threat. An attacker includes malicious instructions in user input that Claude follows instead of your system prompt.
+Both teach understanding, not just pattern matching:
 
-**Prevention:**
-- Separate user input from instructions (distinct message roles)
-- Never put user input in the system prompt
-- Validate and sanitize all user input
-- Use output guardrails to detect leaked system information`,
+\`\`\`
+✅ Positive: "DROP TABLE users" → CRITICAL (SQL injection)
+❌ Negative: "I want to drop my subscription" → NOT critical (no SQL context)
+\`\`\`
+
+### Why Ambiguous Cases?
+
+Ambiguous cases are where few-shot adds the most value. Obvious cases Claude handles without examples. The edge cases are what trip it up.
+
+### Key Rules
+
+- **2-4 examples**, not 20 — quality over quantity
+- **Include reasoning** — "Thought: ... Reason: ..." for each
+- **Order matters** — put the most representative example first
+- **Each example should demonstrate a different edge case or boundary condition**
+
+> ⚠️ **Exam trap:** "Include 20+ examples for thoroughness" is wrong. 2-4 focused on ambiguous cases is the correct approach.`,
   },
   {
     id: '4-3',
-    explanation: `## Rate Limiting and Circuit Breakers
+    explanation: `## Extended Thinking
+
+Extended thinking gives Claude a private scratchpad for complex multi-step reasoning — but it comes at a cost.
 
 \`\`\`mermaid
-flowchart TD
-    R[Incoming Request] --> L{Rate Limit Check}
-    L -->|Under limit| P[Process normally]
-    L -->|Over limit| Q{Circuit Breaker State}
-    Q -->|Closed| C[Queue request]
-    Q -->|Open| X[Return 429 + Retry-After]
-    Q -->|Half-Open| T[Try one request]
-    T -->|Success| P
-    T -->|Fail| X
+flowchart LR
+    Q[Complex Question] --> T["🧠 Extended Thinking<br/>budget_tokens"]
+    T --> |"Low budget"| F["Fast but superficial"]
+    T --> |"High budget"| D["Thorough but slow/expensive"]
+    T --> A[Final Answer]
 
-    style L fill:#f59e0b,color:#fff
-    style X fill:#ef4444,color:#fff
-    style P fill:#10b981,color:#fff
+    style T fill:#8b5cf6,color:#fff
+    style F fill:#f59e0b,color:#fff
+    style D fill:#10b981,color:#fff
 \`\`\`
 
-### Types of Limits
+### When to Use Extended Thinking
 
-| Limit Type | Scope | Example |
-|---|---|---|
-| **Per-user** | X requests/minute per user | Prevents one user from hogging |
-| **Per-session** | X turns per conversation | Prevents infinite loops |
-| **Global** | Total QPM for your app | Prevents API key suspension |
-| **Token-based** | X tokens per time window | More precise than request count |
+| Use For | Don't Use For |
+|---|---|
+| Multi-step reasoning | Simple extraction |
+| Math and calculations | Formatting tasks |
+| Complex analysis | Classification |
+| Logical deductions | Lookup tasks |
 
-### Circuit Breaker Pattern
+### budget_tokens
 
-If error rate spikes, **stop sending requests temporarily**. After cooldown, try again. Prevents cascade failures.
+\`budget_tokens\` controls how much "thinking" Claude does before answering:
+- **Low** = fast but superficial
+- **High** = thorough but slow and expensive
+- Set based on the complexity level of the task
 
-### Graceful Degradation
+### Key Facts
 
-When limits are hit: queue the request, return cached response, or downgrade to a cheaper model. Never just show an error.`,
+- Extended thinking content is **private to Claude** — you see the final answer only
+- It's NOT visible to tools — the scratchpad is internal
+- **Tradeoff:** accuracy ↑ vs cost/latency ↑
+
+> 💡 **Exam tip:** Don't use extended thinking for simple tasks. It's specifically for multi-step reasoning, math, and complex analysis.`,
   },
   {
     id: '4-4',
-    explanation: `## Cost Optimization Strategies
+    explanation: `## Structured Output
+
+Forcing structured output with tool use + JSON schema is far more reliable than prompting "respond in JSON."
 
 \`\`\`mermaid
 flowchart LR
-    subgraph "Token Cost Formula"
-        I[Input Tokens x Price] --> T[Total Cost]
-        O[Output Tokens x Price] --> T
+    subgraph "❌ Prompt-based"
+        P1["'Respond in JSON'"]
+        P2["~90% reliable"]
+    end
+    subgraph "✅ Schema-enforced"
+        S1["tool_choice + JSON schema"]
+        S2["~100% guaranteed"]
     end
 
-    subgraph "Biggest Savings"
-        S1["✅ Prompt caching"]
-        S2["✅ Tiered models"]
-        S3["✅ Context pruning"]
-        S4["✅ App-level caching"]
-    end
-
+    style P1 fill:#ef4444,color:#fff
     style S1 fill:#10b981,color:#fff
-    style S2 fill:#10b981,color:#fff
 \`\`\`
 
-### Tiered Model Selection
+### Tool Use + JSON Schema
 
-Not every task needs the best model:
+Define your output format as a tool with a JSON schema:
 
-| Task type | Model tier |
+\`\`\`json
+{
+  "tools": [{
+    "name": "classify_email",
+    "input_schema": {
+      "type": "object",
+      "required": ["category", "confidence", "reasoning"],
+      "properties": {
+        "category": { "type": "string", "enum": ["spam", "urgent", "normal"] },
+        "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+        "reasoning": { "type": "string" }
+      }
+    }
+  }]
+}
+\`\`\`
+
+### Force with tool_choice
+
+\`\`\`json
+{ "tool_choice": { "type": "tool", "name": "classify_email" } }
+\`\`\`
+
+This forces the output format — Claude **cannot deviate** from the schema.
+
+### Retry Strategy
+
+- **Retry for FORMAT errors only** — malformed JSON, wrong types
+- **Retries DON'T fix MISSING info** — if Claude lacks context, add more context instead
+- JSON schema defines: required fields, types, enums, descriptions
+
+| Problem | Solution |
 |---|---|
-| Complex reasoning, multi-step agents | Best (Sonnet/Opus) |
-| Classification, extraction, Q&A | Light (Haiku) |
-| Guardrails, content filtering | Cheapest that meets accuracy |
+| Wrong JSON format | Retry |
+| Missing required field | Retry |
+| Wrong classification | Add more context/examples |
+| Lacking information | Provide more input data |
 
-### Application-Level Caching
-
-If multiple users ask "What is your return policy?", answer from cache, not from a new API call every time.`,
+> ⚠️ **Exam trap:** Retrying won't fix missing information. If Claude doesn't have enough context, more retries won't help — add better context or examples.`,
   },
   {
     id: '4-5',
-    explanation: `## Security Best Practices
+    explanation: `## Metaprompt
 
-\`\`\`mermaid
-flowchart TD
-    A[Attacker] -->|Prompt injection| B{Input Validation}
-    A -->|Data extraction| C{Access Controls}
-    A -->|Tool misuse| D{PreToolUse Hooks}
-    
-    B -->|Block| E[Blocked + logged]
-    C -->|Deny| E
-    D -->|Block| E
-
-    B -->|Pass| F[Claude + sanitized input]
-    C -->|Allow| F
-    D -->|Allow| G[Execute with least privilege]
-
-    style E fill:#ef4444,color:#fff
-    style F fill:#3b82f6,color:#fff
-    style G fill:#10b981,color:#fff
-\`\`\`
-
-### Three Main Threats
-
-1. **Prompt injection** — Malicious instructions in user input. Prevent: input validation, output guardrails.
-2. **Data exfiltration** — Tricking Claude into extracting sensitive data. Prevent: least privilege, access controls.
-3. **Tool misuse** — Tricking Claude into executing harmful actions. Prevent: hooks, human confirmation.
-
-### Principle of Least Privilege
-
-Give Claude access to only what it needs. If it only reads customer names, do not give it access to the entire customer table including SSNs.`,
-  },
-  {
-    id: '4-6',
-    explanation: `## Logging and Monitoring
+The Metaprompt is a system prompt generator — you give it a task description and it produces an optimized system prompt.
 
 \`\`\`mermaid
 flowchart LR
-    subgraph What to Log
-        A[API calls: tokens, latency, cost]
-        B[Tool executions: params, results]
-        C[User interactions: messages, feedback]
-    end
+    T[Task Description] --> M[Metaprompt]
+    M --> S["Optimized System Prompt"]
+    S --> C[Claude]
+    C --> R[Better Results]
 
-    subgraph Metrics
-        D[Quality: hallucination rate, completion rate]
-        E[Performance: response time, turns/session]
-        F[Cost: per session, per user, total]
-    end
-
-    A --> G[Dashboard + Alerts]
-    B --> G
-    C --> G
-    D --> G
-    E --> G
-    F --> G
-
-    style G fill:#3b82f6,color:#fff
+    style M fill:#8b5cf6,color:#fff
+    style S fill:#10b981,color:#fff
 \`\`\`
 
-### Alert On Anomalies
+### What It Does
 
-- Sudden token spike → possible attack or bug
-- Error rate increase → API or downstream issues
-- Hallucination rate increase → prompt or model problem
+1. You describe the task in natural language
+2. The Metaprompt generates a structured system prompt with:
+   - Role definition
+   - Explicit criteria
+   - Output format specification
+   - Edge case handling
 
-### Privacy in Logs
+### When to Use
 
-Logs contain user data. Encrypt at rest, control access, define retention policies (auto-delete after 90 days).`,
+- Starting a new prompt from scratch
+- Optimizing an existing prompt that's underperforming
+- Generating consistent prompt templates for a team
+
+### What It Produces
+
+A well-structured system prompt that includes:
+- Clear role definition for Claude
+- Explicit rules and constraints
+- Output format specification
+- Handling instructions for edge cases
+
+> 💡 **Exam tip:** The Metaprompt is about **generating** prompts, not executing them. It's a meta-level tool — "a prompt that writes prompts."`,
+  },
+  {
+    id: '4-6',
+    explanation: `## Multi-Instance Review
+
+For important outputs, run **separate Claude instances** to independently evaluate the same input — then compare.
+
+\`\`\`mermaid
+flowchart TB
+    I[Input] --> A["Instance A<br/>Review"]
+    I --> B["Instance B<br/>Review"]
+    I --> C["Instance C<br/>Review"]
+    A --> M[Merge Results]
+    B --> M
+    C --> M
+    M --> D["Consensus or<br/>flag disagreements"]
+
+    style A fill:#3b82f6,color:#fff
+    style B fill:#10b981,color:#fff
+    style C fill:#8b5cf6,color:#fff
+    style M fill:#f59e0b,color:#fff
+\`\`\`
+
+### Why Separate Instances?
+
+Using the **same session** for generation and review creates bias — Claude is more lenient reviewing its own work. Separate instances = independent evaluation.
+
+### When to Use
+
+- Code review (generate + separate review)
+- Content moderation at scale
+- Quality assurance for critical outputs
+- Any task where mistakes are costly
+
+### Pattern
+
+\`\`\`
+Session 1: Generate output
+Session 2: Review output independently (no access to Session 1)
+Session 3: Tie-breaker if Sessions 1 and 2 disagree
+\`\`\`
+
+### Key Principle
+
+Each instance should be **truly independent** — no shared context, no conversation history from the other sessions. Fresh start = unbiased review.
+
+> ⚠️ **Exam trap:** "Use the same conversation to review the output" is always wrong. Separate instances prevent self-review bias.`,
   },
 ];
 

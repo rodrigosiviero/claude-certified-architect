@@ -3,235 +3,298 @@ import type { LessonExplanation } from './types';
 export const domain5Explanations: LessonExplanation[] = [
   {
     id: '5-1',
-    explanation: `## Testing AI Systems: Behavioral Over Exact Match
+    explanation: `## Context Management
 
-Traditional tests assume deterministic output. AI systems are probabilistic — the same input can produce different valid outputs.
+Claude has a limited context window and attention isn't uniform — what you put where matters.
 
 \`\`\`mermaid
 flowchart LR
-    subgraph "Traditional Test ❌"
-        A1[Input X] --> B1[Assert output == "Y"]
+    subgraph "Context Window"
+        S["🔥 START<br/>High attention"] --> M["😴 MIDDLE<br/>Low attention"]
+        M --> E["🔥 END<br/>High attention"]
     end
 
-    subgraph "AI Behavioral Test ✅"
-        A2[Input X] --> B2[Assert output mentions refund policy]
-        A2 --> C2[Assert output < 200 words]
-        A2 --> D2[Assert no PII in output]
-        A2 --> E2[Assert valid JSON structure]
-    end
-
-    style B1 fill:#ef4444,color:#fff
-    style B2 fill:#10b981,color:#fff
+    style S fill:#ef4444,color:#fff
+    style M fill:#64748b,color:#fff
+    style E fill:#ef4444,color:#fff
 \`\`\`
 
-### Property-Based Testing
+### "Lost in the Middle" Effect
 
-Instead of checking exact strings, verify **properties** of the output:
+Claude attends most to the **beginning and end** of context — middle gets less attention. Put critical info at START and END.
 
-| Property | Example assertion |
+### State Tracking > Conversation Memory
+
+| Approach | Reliability |
 |---|---|
-| Contains topic | Response mentions "refund policy" |
-| Length constraint | Response is under 200 words |
-| Safety | Response contains no PII |
-| Format | Response is valid JSON |
-| Completeness | All required fields are present |
+| Rely on chat history | Fragile — gets summarized, details lost |
+| Use structured files (JSON/YAML) | Durable — exact state persists |
 
-### Test Set Composition
+### Scratchpad Files for Multi-Phase Work
 
-- **Golden set**: 20-50 curated input-output pairs (domain expert curated)
-- **Production sample**: Real user queries, sampled periodically
-- **Adversarial set**: Edge cases and deliberate attack attempts
+For multi-phase tasks:
+1. Write phase results to **files**
+2. Reference files in the next phase
+3. Don't rely on conversation memory across phases
 
-### Distribution Testing
+### Progressive Summarization Risk
 
-Match your test set to real usage. If 80% of queries are simple and 20% complex, your test set should reflect that ratio.`,
+Progressive summarization is **lossy** — specific numbers and details get rounded or dropped over multiple rounds. Use files, not chat history, for data that must be exact.
+
+> ⚠️ **Exam tip:** "Lost in the middle" + state tracking with files are the two most tested concepts here.`,
   },
   {
     id: '5-2',
-    explanation: `## Evaluation Frameworks and LLM-as-Judge
+    explanation: `## Escalation Triggers
+
+Knowing when to escalate to a human vs when to keep helping is critical for production AI systems.
 
 \`\`\`mermaid
-flowchart TD
-    G[Golden Test Set] --> R[Run prompt against all inputs]
-    R --> S[Score with rubric]
-    S --> J["LLM-as-Judge<br/>(cheaper model grades output)"]
-    J --> D[Dashboard: accuracy, completeness, safety]
-    D -->|Below threshold| A[Alert + block deployment]
-    D -->|Above threshold| M[Merge + deploy]
+flowchart LR
+    M[User Message] --> E{Explicit request?}
+    E -->|"Talk to a human"<br/>"I want a real person"| ESC["⚡ IMMEDIATE<br/>escalation"]
+    E -->|Not explicit| S{Sentiment?}
+    S -->|"This is frustrating"<br/>"ugh"| HELP["Continue helping<br/>Do NOT escalate"]
+    S -->|Neutral| A["Attempt first<br/>Escalate if persists"]
 
-    style J fill:#8b5cf6,color:#fff
-    style D fill:#3b82f6,color:#fff
-    style A fill:#ef4444,color:#fff
-    style M fill:#10b981,color:#fff
+    style ESC fill:#ef4444,color:#fff
+    style HELP fill:#10b981,color:#fff
+    style A fill:#f59e0b,color:#fff
 \`\`\`
 
-### Automated Evaluation with LLM-as-Judge
+### Explicit = IMMEDIATE Escalation
 
-Use a smaller, cheaper model to grade outputs against a rubric. Fast and cheap enough to run on every change. Periodically validate with human reviewers to catch nuanced issues.
+\`\`\`
+"I want to talk to a human"        → Escalate NOW (no "let me try first")
+"Connect me to a real person"       → Escalate NOW
+"Transfer me to an agent"           → Escalate NOW
+\`\`\`
 
-### Scoring Rubric
+### Sentiment ≠ Trigger
 
-| Dimension | Scale | Example question |
-|---|---|---|
-| Accuracy | 1-5 | Is the information correct? |
-| Completeness | 1-5 | Are all required aspects covered? |
-| Safety | Pass/Fail | Any harmful content? |
-| Tone | 1-5 | Is communication style appropriate? |
+\`\`\`
+"This is so frustrating"            → Do NOT escalate, just help better
+"ugh this doesn't work"             → Do NOT escalate, just help better
+"I hate this"                       → Do NOT escalate, just help better
+\`\`\`
 
-### Iteration Loop
+Frustration ≠ escalation request. Help better, don't pass the user off.
 
-1. Run evaluation → identify weakest areas
-2. Improve prompt for those areas
-3. Re-run → check for regressions elsewhere
-4. Deploy only when all scores are above threshold`,
+### Multiple Ambiguous Matches
+
+When multiple escalation points match, **ask the user to clarify** which one they need.
+
+### Attempt-First for Non-Explicit
+
+For non-explicit requests: attempt to help first, then escalate if the request persists or you can't resolve it.
+
+> ⚠️ **Exam trap:** Escalating on "this is frustrating" is WRONG. Sentiment alone is never an escalation trigger.`,
   },
   {
     id: '5-3',
-    explanation: `## CI/CD for AI: Deploying Prompts Safely
+    explanation: `## PII Protection
+
+Personally Identifiable Information (PII) must be protected at every boundary where data flows between systems.
 
 \`\`\`mermaid
 flowchart LR
-    P[Prompt Change] --> CI[CI: Run eval suite]
-    CI -->|Scores drop| X[Block merge]
-    CI -->|Scores pass| ST[Staging: adversarial tests]
-    ST --> CA[Canary: 5% traffic]
-    CA -->|Metrics degrade| RB[Auto-rollback]
-    CA -->|Metrics stable| PR[Production: 100%]
+    U[User Input] --> R["🔴 Redact PII<br/>at tool boundary"]
+    R --> C[Claude Context]
+    C --> T[Tool Call]
+    T --> L["🔒 Safe Logging<br/>field-level redaction"]
 
-    style X fill:#ef4444,color:#fff
-    style RB fill:#ef4444,color:#fff
-    style PR fill:#10b981,color:#fff
+    style R fill:#ef4444,color:#fff
+    style L fill:#10b981,color:#fff
 \`\`\`
 
-### Pipeline Stages
+### Redact at Tool Boundaries
 
-1. **Pre-commit**: Lint prompts, validate tool schemas
-2. **CI**: Run evaluation suite, compare to baseline, block if scores drop
-3. **Staging**: Deploy to staging, run adversarial tests, human review
-4. **Canary**: Deploy to 5% of traffic, monitor real metrics
-5. **Production**: Gradually increase to 100%
+Tool boundaries = the point where data leaves one system and enters another. **Redact BEFORE data enters Claude's context** — prevention, not cure.
 
-### Version Control for Prompts
+### Least Information Principle
 
-Treat prompts like code: git, tags, changelogs. When something breaks, diff the prompt versions.
+Only pass what's **strictly needed** for the task. If Claude doesn't need an SSN to answer the question, don't send it.
 
-### Model Version Pinning
+### Common PII to Watch For
 
-Anthropic updates models. The same prompt may produce different results on a new version. **Pin your model version** in production and test before upgrading.`,
+- SSN, CPF, national ID numbers
+- Email addresses, phone numbers
+- Physical addresses, dates of birth
+- Financial account numbers
+- Medical records
+
+### Safe Logging
+
+\`\`\`
+❌ Log: "User john@email.com queried account 12345"
+✅ Log: "User [REDACTED] queried account [REDACTED]"
+\`\`\`
+
+Log **that** a query happened, not **what** it contained.
+
+### Error Messages Must NEVER Expose PII
+
+\`\`\`
+❌ Error: "Failed to process SSN 123-45-6789"
+✅ Error: "Failed to process identity verification"
+\`\`\`
+
+> 💡 **Exam tip:** Redaction happens at tool boundaries, BEFORE Claude sees the data. Not after.`,
   },
   {
     id: '5-4',
-    explanation: `## Debugging AI Systems
+    explanation: `## Large Workflows
 
-\`\`\`mermaid
-flowchart TD
-    BUG[Reported Issue] --> REP[Reproduce with exact input]
-    REP --> ISO{Isolate cause}
-    ISO -->|Prompt| P[Check prompt for ambiguity]
-    ISO -->|Tool| T[Check tool result quality]
-    ISO -->|Context| C[Check conversation history]
-    ISO -->|Model| M[Try different model]
-    
-    P --> FIX[Fix + regression test]
-    T --> FIX
-    C --> FIX
-    M --> FIX
-
-    style BUG fill:#ef4444,color:#fff
-    style FIX fill:#10b981,color:#fff
-\`\`\`
-
-### Common Bug Patterns
-
-| Bug | Cause | Fix |
-|---|---|---|
-| **Hallucination** | Insufficient context | Add "only use provided context" instruction |
-| **Wrong tool** | Vague tool descriptions | Improve descriptions with examples |
-| **Infinite loop** | Tool results lack info for Claude to answer | Improve result quality + max turn limit |
-| **Context confusion** | Long history with conflicting info | Summarize or prune old context |
-
-### Reproduction Is Everything
-
-Capture the **full message array** (system prompt, all messages, tool definitions). Without exact reproduction, you are guessing at the fix.`,
-  },
-  {
-    id: '5-5',
-    explanation: `## Performance Optimization
+When dealing with large datasets or long-running processes, paginate, isolate, and checkpoint.
 
 \`\`\`mermaid
 flowchart LR
-    subgraph "Where time is spent"
-        A["API call: 2-30s"]
-        B["Tool execution: 0.1-10s"]
-        C["Network: 0.05-0.5s"]
-    end
+    Q[Query] --> P["Paginate<br/>LIMIT + count + summary"]
+    P --> N{Has more?}
+    N -->|Yes| M["Claude requests<br/>next page"]
+    N -->|No| D[Done]
+    
+    D --> CK["Checkpoint<br/>state manifest"]
+    CK --> |Crash?| RS["Resume from<br/>last checkpoint"]
 
-    subgraph "Optimizations"
-        D["✅ Prompt caching"]
-        E["✅ Streaming"]
-        F["✅ Parallel tool execution"]
-        G["✅ Model tiering"]
-    end
-
-    style D fill:#10b981,color:#fff
+    style P fill:#3b82f6,color:#fff
+    style CK fill:#10b981,color:#fff
 \`\`\`
 
-### Key Strategies
+### Paginate Results
 
-1. **Streaming**: Return tokens as they are generated. User sees first word in 1-2s instead of waiting for the full response.
-2. **Parallel tools**: If Claude requests multiple independent tools, execute them simultaneously.
-3. **Predictive pre-fetch**: Start fetching data before Claude requests it (application-level logic).
-4. **Model tiering**: Use the smallest model that meets quality requirements.
-5. **Application caching**: Cache frequent Q&A pairs.
+\`\`\`
+Pattern: return first N results + total_count + has_more boolean
+\`\`\`
 
-### Latency Targets
+Never dump everything at once. Let Claude request more pages if needed — don't pre-fetch everything.
 
-Track p50 (median), p90, and p99. Optimize for **p99** — the slowest 1% is where users notice lag.`,
+### Subagent Isolation
+
+For **verbose exploration tasks**, use subagent isolation. The sub-agent does the heavy lifting without polluting the main conversation context.
+
+### Crash Recovery
+
+Use **state manifests** — checkpoint your progress so you can resume from the last successful point if something crashes.
+
+\`\`\`json
+{
+  "last_processed": 47,
+  "total": 200,
+  "results_so_far": [...],
+  "phase": "extraction"
+}
+\`\`\`
+
+### Stratified Quality Monitoring
+
+Measure quality **per segment**, not just overall average. A good overall score can hide terrible performance on specific segments.
+
+> 💡 **Exam tip:** Paginate with LIMIT + count + summary. Never dump all results.`,
+  },
+  {
+    id: '5-5',
+    explanation: `## Multi-Turn Operations
+
+Production AI conversations span multiple turns. Managing state, errors, and tool results across turns is essential.
+
+\`\`\`mermaid
+flowchart LR
+    T1["Turn 1<br/>User asks question"] --> T2["Turn 2<br/>Tool call + result"]
+    T2 --> T3["Turn 3<br/>Claude synthesizes"]
+    T3 --> T4["Turn 4<br/>User follows up"]
+    T4 --> T5["Turn 5<br/>Claude uses prior context"]
+
+    style T1 fill:#3b82f6,color:#fff
+    style T3 fill:#10b981,color:#fff
+    style T5 fill:#8b5cf6,color:#fff
+\`\`\`
+
+### State Persistence Across Turns
+
+- Use **structured state files** (JSON/YAML) for data that must survive across turns
+- Don't rely on Claude "remembering" from earlier turns for critical data
+- Conversation context is finite — important details can get pushed out
+
+### Tool Result Handling
+
+When a tool call fails:
+1. Log the error clearly
+2. Try an alternative approach if possible
+3. Ask the user for clarification if the tool can't proceed
+4. Never silently ignore tool failures
+
+### Multi-Turn Error Recovery
+
+\`\`\`
+Turn 1: Claude calls tool → Error: timeout
+Turn 2: Claude retries with simpler query → Partial success
+Turn 3: Claude combines partial results + informs user of limitation
+\`\`\`
+
+### Context Window Pressure
+
+Long multi-turn conversations fill the context window. Use:
+- Summarization of earlier turns (but beware progressive summarization loss)
+- External state files for critical data
+- Sub-agents for independent sub-tasks
+
+> 💡 **Exam tip:** Structured state files > conversation memory for multi-turn reliability.`,
   },
   {
     id: '5-6',
-    explanation: `## Production Deployment Patterns
+    explanation: `## Provenance & Attribution
+
+In production AI systems, you must know **where** every piece of information came from.
 
 \`\`\`mermaid
-flowchart TD
-    U[User Request] --> LB[Load Balancer]
-    LB --> W1[Worker 1]
-    LB --> W2[Worker 2]
-    LB --> W3[Worker N]
-    
-    W1 --> Q[Request Queue]
-    W2 --> Q
-    W3 --> Q
-    
-    Q --> API[Claude API]
-    
-    API -->|Error| RET[Retry with backoff]
-    RET -->|3x fail| FB[Fallback: cached / smaller model]
-    API -->|Success| RES[Return response]
+flowchart LR
+    S1["Source A<br/>Internal docs"] --> C[Claude Response]
+    S2["Source B<br/>Tool result"] --> C
+    S3["Source C<br/>User input"] --> C
+    C --> A["Attribution<br/>'Based on Source A + B'"]
 
-    style LB fill:#3b82f6,color:#fff
-    style FB fill:#f59e0b,color:#fff
-    style RES fill:#10b981,color:#fff
+    style A fill:#10b981,color:#fff
 \`\`\`
 
-### Reliability Patterns
+### Why Attribution Matters
 
-| Pattern | How it works |
-|---|---|
-| **Retry with backoff** | Wait 1s → 2s → 4s → 8s. Most transient errors resolve quickly. |
-| **Graceful degradation** | Fallback to cached response or smaller model when Claude is unavailable |
-| **Health checks** | Regularly verify Claude API is reachable and fast |
-| **Circuit breaker** | Stop sending requests during error spikes, retry after cooldown |
+- **Auditability** — trace any output back to its source
+- **Trust** — users can verify information
+- **Compliance** — regulations may require source tracking
+- **Debugging** — when output is wrong, find which source was incorrect
 
-### Scalability
+### How to Implement
 
-- **Queue-based processing**: Smooth out traffic spikes
-- **Horizontal scaling**: Add more workers as traffic grows
-- **Load balancing**: Distribute across multiple API keys
+- Tag each piece of retrieved context with its source
+- Include source references in Claude's output instructions
+- Log which sources were used for each response
 
-### Observability
+\`\`\`json
+{
+  "response": "The API rate limit is 100 req/min",
+  "sources": ["internal-api-docs.md", "rate-limits-config.yaml"],
+  "confidence": "high"
+}
+\`\`\`
 
-Dashboards (request volume, latency, error rate, cost), distributed tracing (track one request through the full pipeline), and error tracking (group and alert on new error types).`,
+### Source Reliability
+
+Not all sources are equal. Teach Claude to:
+- Prefer official documentation over forum posts
+- Flag outdated sources
+- Note conflicts between sources
+- Express uncertainty when sources disagree
+
+### Documentation Standards
+
+Every AI output in production should be traceable:
+- Which model version generated it
+- What sources/context were used
+- When it was generated
+- What prompt triggered it
+
+> ⚠️ **Exam tip:** Provenance = traceability. Every output must be attributable to its sources.`,
   },
 ];
 
