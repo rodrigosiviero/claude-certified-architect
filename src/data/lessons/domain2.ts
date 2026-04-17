@@ -129,89 +129,9 @@ Caching costs slightly more on the first request (cache write). Subsequent reque
   },
   {
     id: '2-4',
-    explanation: `## JSON Mode and Structured Output
+    explanation: `## MCP Server Integration
 
-Claude naturally responds in free-form text. JSON mode guarantees the output is always valid JSON — essential for programmatic use.
-
-\`\`\`mermaid
-flowchart LR
-    U[User Input] --> C[Claude + JSON mode]
-    C --> P{Valid JSON?}
-    P -->|Yes| D[Parse and use]
-    P -->|No - rare| R[Retry with validation error]
-    R --> C
-
-    style C fill:#3b82f6,color:#fff
-    style D fill:#10b981,color:#fff
-\`\`\`
-
-### How to Use JSON Mode
-
-1. Set \`response_format\` to \`type: "json_object"\` in the API request
-2. Instruct Claude in the prompt to produce JSON with specific fields
-3. Claude always responds with valid JSON — no markdown wrappers, no extra text
-
-> 💡 **The catch:** You MUST instruct Claude to produce JSON in your prompt. Without this instruction, Claude might produce an empty JSON object.
-
-### JSON Mode vs Prompting for JSON
-
-| Approach | Reliability |
-|---|---|
-| "Respond in JSON" (no mode) | ~90% — may wrap in markdown or add commentary |
-| JSON mode enabled | ~100% — guaranteed valid JSON |
-
-### Schema Enforcement
-
-JSON mode guarantees valid JSON but does **not** guarantee a specific schema. Describe the expected structure in the prompt. For critical applications, add post-processing validation.`,
-  },
-  {
-    id: '2-5',
-    explanation: `## Computer Use Tool
-
-Computer use lets Claude interact with graphical interfaces — clicking buttons, typing text, reading screenshots. For systems without APIs.
-
-\`\`\`mermaid
-flowchart LR
-    S["Capture screen"] --> A["Claude analyzes image"]
-    A --> D["Decide action: click/type/scroll"]
-    D --> E["Execute action"]
-    E --> L["Take new screenshot"]
-    L --> S
-
-    style S fill:#3b82f6,color:#fff
-    style A fill:#8b5cf6,color:#fff
-    style D fill:#f59e0b,color:#fff
-    style E fill:#10b981,color:#fff
-    style L fill:#64748b,color:#fff
-\`\`\`
-
-### Tools Available
-
-| Tool | What it does |
-|---|---|
-| \`computer\` | Screenshot, mouse move, click, type, scroll |
-| \`text_editor\` | Read and edit text files |
-| \`bash\` | Run shell commands |
-
-### Use Cases and Limitations
-
-- ✅ Automating legacy systems without APIs
-- ✅ UI testing across browsers
-- ⚠️ Slow — every action requires a screenshot and API call
-- ⚠️ Expensive — image processing costs more tokens
-- ⚠️ Not real-time — delay between decision and execution
-
-> 💡 Always run computer use in a **sandboxed environment** (VM or container). Claude might click the wrong button or navigate to unexpected places.
-
-### Multi-Step UI Automation
-
-For multi-step workflows (fill form → submit → verify), maintain a **state tracker** that records which step you are on. If Claude makes a mistake, the tracker lets you retry from the last successful step instead of starting over.`,
-  },
-  {
-    id: '2-6',
-    explanation: `## MCP: Model Context Protocol
-
-MCP standardizes how AI models connect to external tools and data. Think of it like **USB for AI** — one connector standard for everything.
+MCP (Model Context Protocol) standardizes how AI models connect to external tools and data. Think of it like **USB for AI** — one connector standard for everything.
 
 \`\`\`mermaid
 flowchart TB
@@ -237,19 +157,139 @@ flowchart TB
 
 ### What MCP Servers Expose
 
-| Type | Description | Example |
+| Type | Purpose | Example |
 |---|---|---|
-| **Tools** | Functions the AI can call | search_files, query_database |
-| **Resources** | Data the AI can read | file contents, DB records |
-| **Prompts** | Pre-written prompt templates | "Review this code for bugs" |
+| **Tools** | Actions — *do something* | search_files, query_database |
+| **Resources** | Data — *read something* | file contents, DB records |
+| **Prompts** | Templates — *reusable* | "Review this code for bugs" |
 
-### Tool Search (Dynamic Loading)
+### Configuration
 
-Instead of loading ALL tools at once, use **ToolSearch** to find relevant tools on-demand. This reduces the token cost of tool definitions in every request.
+Configure MCP servers via \`.mcp.json\` with \`\${ENV_VAR}\` for secrets — **never hardcode** API keys or credentials.
 
-### Creating Custom MCP Servers
+\`\`\`json
+{
+  "mcpServers": {
+    "github": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": { "GITHUB_TOKEN": "\${GITHUB_TOKEN}" }
+    }
+  }
+}
+\`\`\`
 
-Define tools with clear names and descriptions, implement execution logic, and the MCP framework handles the communication protocol. Any AI that supports MCP can immediately use your tools.`,
+### Transport Types
+
+| Transport | Use case | Characteristics |
+|---|---|---|
+| **stdio** | Local dev, most common | Process on same machine, fast |
+| **HTTP/SSE** | Remote/shared servers | Team-accessible, requires network |
+
+### Key Behaviors
+
+- **Runtime capability discovery** — Claude learns available tools at startup, no hardcoding needed
+- **Server capabilities are advertised on connection** — Claude adapts dynamically
+- **MCP servers are isolated** — they don't share state with each other
+- **Multiple MCP servers can coexist** — each contributes its own tools/resources
+
+> 💡 **Exam tip:** Know the difference between Tools (actions), Resources (data), and Prompts (templates). This is a common question pattern.`,
+  },
+  {
+    id: '2-5',
+    explanation: `## Built-in Tool Selection
+
+Claude Code comes with built-in tools for file operations and command execution. Knowing when to use each is critical for the exam.
+
+\`\`\`mermaid
+flowchart LR
+    Q[Task] --> R{What to do?}
+    R -->|Read file| Read["Read tool<br/>✅ Always safe"]
+    R -->|Search code| Grep["Grep/Glob<br/>✅ Zero side effects"]
+    R -->|Modify file| Edit["Edit tool<br/>⚠️ Caution tier"]
+    R -->|New file| Write["Write tool<br/>⚠️ Caution tier"]
+    R -->|Run command| Bash["Bash tool<br/>🔴 Confirm tier"]
+
+    style Read fill:#10b981,color:#fff
+    style Grep fill:#10b981,color:#fff
+    style Edit fill:#f59e0b,color:#fff
+    style Write fill:#f59e0b,color:#fff
+    style Bash fill:#ef4444,color:#fff
+\`\`\`
+
+### The Built-in Tools
+
+| Tool | Purpose | Safety Tier |
+|---|---|---|
+| **Read** | View file contents | 🟢 Free — always allowed, no side effects |
+| **Write** | Create new files or overwrite entirely | 🟡 Caution — use for fresh files |
+| **Edit** | Surgical modifications to existing files | 🟡 Caution — requires search pattern |
+| **Bash** | Run arbitrary shell commands | 🔴 Confirm — most powerful, most dangerous |
+| **Grep** | Search file contents by pattern | 🟢 Free — zero side effects |
+| **Glob** | Find files by name pattern | 🟢 Free — zero side effects |
+| **LS** | List directory contents | 🟢 Free — read-only exploration |
+
+### Critical Rules
+
+1. **Always Read before Edit** — you need to know what's in the file first
+2. **Edit for modifications, Write for new files** — don't overwrite entire files when you only need to change a line
+3. **Bash is the nuclear option** — it can do anything, including destructive operations
+
+### Safety Tiers in Practice
+
+\`\`\`
+Free tier:    Read, Grep, Glob, LS     →  No approval needed
+Caution tier: Write, Edit              →  Requires review
+Confirm tier: Bash                     →  Requires explicit approval
+\`\`\`
+
+> ⚠️ **Exam trap:** Questions will try to trick you into using Write when Edit is correct (or vice versa). Remember: **Edit = modify existing, Write = create new or full overwrite.**`,
+  },
+  {
+    id: '2-6',
+    explanation: `## Tool Search
+
+When you have many tools available, Claude uses **embedding-based semantic selection** to pick the right ones — NOT keyword matching.
+
+\`\`\`mermaid
+flowchart LR
+    Q[User Query] --> E[Embed query]
+    T[Tool Catalog] --> TE[Embed tool descriptions]
+    E --> S[Similarity comparison]
+    TE --> S
+    S --> Top["Select top 4-5 tools"]
+    Top --> R["Re-rank by similarity × frequency"]
+
+    style Q fill:#3b82f6,color:#fff
+    style S fill:#8b5cf6,color:#fff
+    style Top fill:#10b981,color:#fff
+    style R fill:#f59e0b,color:#fff
+\`\`\`
+
+### How Tool Search Works
+
+1. **Pre-compute tool embeddings** from tool descriptions — do this offline, not at query time
+2. **Embed the user's query** in the same vector space
+3. **Compare similarity** and select the top 4-5 tools per request
+4. **Re-rank** by combining semantic similarity with usage frequency
+
+### Why Embeddings, Not Keywords?
+
+| Approach | Problem |
+|---|---|
+| Keyword search | Misses synonyms, context, and intent |
+| Embedding search | Captures meaning, not just words |
+
+**Example:** Query "delete my account" → keyword search might miss \`archive_user\` tool. Embeddings understand "delete" ≈ "archive" in this context.
+
+### Key Guidelines
+
+- **Tool descriptions feed the embeddings** — better descriptions = better search results
+- **For small catalogs (<10 tools)**, search isn't needed — Claude handles them all
+- **Monitor tool selection accuracy** to tune your embedding model over time
+- **Pre-compute embeddings for speed** — computing at query time adds latency
+
+> 💡 **Exam tip:** The exam emphasizes that tool selection is **semantic** (embedding-based), not **lexical** (keyword-based). This distinction comes up frequently.`,
   },
 ];
 
