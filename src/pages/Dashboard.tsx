@@ -118,6 +118,7 @@ export default function Dashboard() {
     overallProgress, getDomainProgress, completedLabs, completedScenarios,
     quizScores, practiceExamScore, scenarioExamScore,
     notes, studyDates, currentStreak, flashcardsReviewed,
+    totalCompleted, totalLessons,
   } = useCourse();
 
   const domainValues = domainInfo.map(d => getDomainProgress(d.id));
@@ -126,10 +127,9 @@ export default function Dashboard() {
     .filter(d => d.score >= 0 && d.score < 70);
 
   const notesCount = Object.keys(notes).length;
-  const totalLessons = 29;
 
   // Find next incomplete lesson
-  const lessonCounts: Record<string, number> = { domain1: 7, domain2: 5, domain3: 6, domain4: 6, domain5: 6 };
+  const lessonCounts: Record<string, number> = { domain1: 7, domain2: 6, domain3: 6, domain4: 6, domain5: 6 };
   let continueLesson: { domain: number; lesson: number } | null = null;
   for (const d of [1, 2, 3, 4, 5]) {
     for (let l = 1; l <= lessonCounts[`domain${d}`]; l++) {
@@ -157,7 +157,7 @@ export default function Dashboard() {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <StatCard icon={BookOpen} label="Lessons" value={`${Object.values(studyDates).length > 0 ? Math.round(overallProgress / 100 * totalLessons) : 0}/${totalLessons}`} color="#3b82f6" />
+        <StatCard icon={BookOpen} label="Lessons" value={`${totalCompleted}/${totalLessons}`} color="#3b82f6" />
         <StatCard icon={FlaskConical} label="Labs" value={`${completedLabs.size}/14`} color="#10b981" />
         <StatCard icon={Brain} label="Flashcards" value={`${flashcardsReviewed}`} color="#8b5cf6" />
         <StatCard icon={StickyNote} label="Notes" value={`${notesCount}`} color="#f59e0b" />

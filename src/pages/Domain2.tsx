@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronDown, ChevronRight, CheckCircle2, Circle, Code, BookOpen, FlaskConical, ArrowRight, AlertTriangle, Lightbulb, ExternalLink , Brain } from 'lucide-react';
 import { useCourse } from '../context/CourseContext';
@@ -860,6 +860,12 @@ export default function Domain2() {
   const [completedLessons, setCompletedLessons] = useState<Set<string>>(new Set());
   const { completeLesson, isLessonCompleted } = useCourse();
 
+  const contextCompletedCount = useMemo(() =>
+    lessons.filter(l => isLessonCompleted('domain2', l.id)).length,
+    [isLessonCompleted, lessons]
+  );
+  const displayCompleted = Math.max(contextCompletedCount, completedLessons.size);
+
   const toggleLesson = (id: string) => {
     setExpandedLesson(expandedLesson === id ? null : id);
   };
@@ -905,12 +911,12 @@ export default function Domain2() {
       <div className="bg-white rounded-xl border p-4">
         <div className="flex items-center justify-between mb-2">
           <span className="text-sm font-medium text-slate-700">Progress</span>
-          <span className="text-sm text-slate-500">{completedLessons.size}/{lessons.length} lessons completed</span>
+          <span className="text-sm text-slate-500">{displayCompleted}/{lessons.length} lessons completed</span>
         </div>
         <div className="w-full bg-slate-100 rounded-full h-2">
           <div
             className="bg-emerald-500 h-2 rounded-full transition-all"
-            style={{ width: `${(completedLessons.size / lessons.length) * 100}%` }}
+            style={{ width: `${(displayCompleted / lessons.length) * 100}%` }}
           />
         </div>
       </div>

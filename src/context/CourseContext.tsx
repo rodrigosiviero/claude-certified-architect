@@ -42,6 +42,8 @@ interface CourseContextType {
   isLessonCompleted: (domainId: string, lessonId: string) => boolean;
   getDomainProgress: (domainId: string) => number;
   overallProgress: number;
+  totalCompleted: number;
+  totalLessons: number;
   completedLabs: Set<string>;
   completedScenarios: Set<string>;
   quizScores: Record<string, number>;
@@ -77,15 +79,15 @@ const STORAGE_KEY = 'claude-architect-course-progress';
 
 const defaultProgress: Record<string, DomainProgress> = {
   domain1: { lessons: { '1-1': { completed: false }, '1-2': { completed: false }, '1-3': { completed: false }, '1-4': { completed: false }, '1-5': { completed: false }, '1-6': { completed: false }, '1-7': { completed: false } } },
-  domain2: { lessons: { '2-1': { completed: false }, '2-2': { completed: false }, '2-3': { completed: false }, '2-4': { completed: false }, '2-5': { completed: false } } },
+  domain2: { lessons: { '2-1': { completed: false }, '2-2': { completed: false }, '2-3': { completed: false }, '2-4': { completed: false }, '2-5': { completed: false }, '2-6': { completed: false } } },
   domain3: { lessons: { '3-1': { completed: false }, '3-2': { completed: false }, '3-3': { completed: false }, '3-4': { completed: false }, '3-5': { completed: false }, '3-6': { completed: false } } },
   domain4: { lessons: { '4-1': { completed: false }, '4-2': { completed: false }, '4-3': { completed: false }, '4-4': { completed: false }, '4-5': { completed: false }, '4-6': { completed: false } } },
   domain5: { lessons: { '5-1': { completed: false }, '5-2': { completed: false }, '5-3': { completed: false }, '5-4': { completed: false }, '5-5': { completed: false }, '5-6': { completed: false } } },
 };
 
-const TOTAL_LESSONS = 29;
-const TOTAL_LABS = 13;
-const TOTAL_SCENARIOS = 25;
+const TOTAL_LESSONS = 31;
+const TOTAL_LABS = 14;
+const TOTAL_SCENARIOS = 20;
 
 function loadState(): PersistedState | null {
   try {
@@ -323,7 +325,7 @@ export function CourseProvider({ children }: { children: ReactNode }) {
 
   return (
     <CourseContext.Provider value={{
-      progress, completeLesson, isLessonCompleted, getDomainProgress, overallProgress,
+      progress, completeLesson, isLessonCompleted, getDomainProgress, overallProgress, totalCompleted, totalLessons: TOTAL_LESSONS,
       completedLabs, completedScenarios, quizScores, practiceExamScore, scenarioExamScore,
       markLabCompleted, markScenarioCompleted, setQuizScore, setPracticeExamScore, setScenarioExamScore,
       getAchievementState, resetProgress,
