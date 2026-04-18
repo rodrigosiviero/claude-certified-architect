@@ -380,6 +380,14 @@ As conversations grow, older turns are compressed. But **summarized tool results
 
 Create a branch from a specific message index. Explore multiple approaches from the same conversation point. Each fork is independent — changes in one do not affect the other.
 
+### fork_session
+
+Programmatically fork the current conversation into a new independent session. The fork starts from the current state but diverges. Use when you want to try a risky approach without risking the main session. If the fork fails, the original session is untouched.
+
+### Explore Subagent
+
+Claude Code can spawn a dedicated **Explore subagent** to investigate codebases. The Explore subagent navigates directories, reads files, and returns structured findings — all in its own context. The main agent receives only the summary, keeping its context clean. Critical for large codebases where direct exploration would fill the context window.
+
 ### State Persistence
 
 If your agent crashes, all progress is lost. Design for crash recovery:

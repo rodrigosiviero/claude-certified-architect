@@ -658,6 +658,9 @@ claude "Now fix Bug C, which depends on Bug A's fix"
       'Test generation needs context about existing tests. Claude has no inherent knowledge of your test suite. Without providing existing test files, Claude will generate tests that duplicate already-covered scenarios. Fix: include existing test files in the generation prompt.',
       'Document fixtures in CLAUDE.md for CI. If your tests use specific fixtures (sample data, mock objects), document them in .claude/CLAUDE.md so Claude knows to use them instead of inventing new test data.',
       'The --output-format flag controls Claude\'s output format. Use --output-format json in CI for machine-parseable results. Use --json-schema to define the expected output structure.',
+      'The --json-schema flag: pass a JSON schema to enforce structured output in non-interactive mode. Example: claude -p "Extract issues" --output-format json --json-schema \'{"type":"object","properties":{"issues":{"type":"array","items":{"type":"object","properties":{"severity":{"type":"string","enum":["high","medium","low"]},"description":{"type":"string"}}}}}}\' — Claude\'s response is guaranteed to match the schema.',
+      'Combining -p + --output-format json + --json-schema is the full CI pattern: non-interactive, machine-parseable, schema-validated output. This eliminates post-processing and error handling for malformed responses.',
+      'The -p / --print flag runs Claude in non-interactive mode. Claude processes the prompt, outputs the result, and exits. No conversation, no follow-up. Essential for scripts and CI pipelines where no human is present.',
       'Review criteria in CLAUDE.md: document what your CI review should check — security issues, performance regressions, style violations, test coverage requirements. Claude follows these criteria consistently when they\'re documented.',
     ],
     skills: [

@@ -61,4 +61,22 @@ export const domain4Cards: Flashcard[] = [
     front: 'Why is self-review (same session) problematic?',
     back: 'The model retains reasoning context from generation, making it less likely to question its own decisions. Independent instances without prior context are more effective. Use multi-pass: local (per-file) → integration (cross-file) → architecture passes.',
   },
+  {
+    id: 'd4-11', domainId: 'domain4', lessonId: '4-4', difficulty: 'medium',
+    tags: ['validation', 'pydantic'],
+    front: 'How does Pydantic help with Claude\'s structured output validation?',
+    back: 'Pydantic validates at two levels: (1) Schema validation — catches type errors, missing required fields, enum violations. (2) Semantic validation via custom validators (field_validator, model_validator) — catches business logic errors like negative amounts or inconsistent dates. Feed ValidationError messages back to Claude for retry.',
+  },
+  {
+    id: 'd4-12', domainId: 'domain4', lessonId: '4-3', difficulty: 'hard',
+    tags: ['schema', 'nullable'],
+    front: 'Why use nullable fields in JSON schemas for Claude extraction?',
+    back: 'When a field might not be present in the source, making it optional AND nullable gives Claude an explicit "I don\'t know" option (null) instead of forcing it to fabricate a value. Over-marking fields as required without nullable causes hallucination.',
+  },
+  {
+    id: 'd4-13', domainId: 'domain4', lessonId: '4-3', difficulty: 'medium',
+    tags: ['schema', 'other-pattern'],
+    front: 'What is the "other" + detail string pattern in JSON schemas?',
+    back: 'For classification fields where predefined categories might not cover everything: add "other" to the enum plus a companion detail field. Example: {category: {enum: ["bug","feature","other"]}, category_detail: {type: "string"}}. Prevents Claude from shoehorning ambiguous items into wrong categories.',
+  },
 ];

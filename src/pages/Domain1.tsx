@@ -757,6 +757,10 @@ await claude(\`Check all imports across UserService.ts and OrderService.ts. Veri
       'Immutable case facts: pin critical data (customer IDs. order amounts. refund status) in a block that is NEVER summarized. This is essential for long sessions.',
       'When to use --resume vs fresh: --resume if context still valid and no external changes. Fresh + summary if stale or files changed since last session.',
       'Session forking for parallel exploration: explore multiple approaches from the same conversation point. Each fork is independent.',
+      'fork_session: programmatically fork the current conversation into a new independent session. The fork starts from the current state but diverges. Use when you want to try a risky approach without risking the main session. If the fork fails, the original session is untouched.',
+      'Explore subagent: Claude Code can spawn a dedicated Explore subagent to investigate codebases. The Explore subagent navigates directories, reads files, and returns structured findings — all in its own context. The main agent receives only the summary, keeping its context clean. This is critical for large codebases where direct exploration would fill the context window.',
+      'Named sessions: assign names to sessions for easy retrieval. "claude --resume my-refactor-session" is more practical than tracking session IDs. Named sessions also help when running multiple parallel investigations.',
+      'Session context isolation: each session has its own context. Subagents spawned in one session don\'t pollute another session\'s context. This is why forking + subagents is a powerful pattern for parallel exploration.',
     ],
     skills: [
       'Use --resume for valid session continuation',

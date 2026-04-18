@@ -61,4 +61,16 @@ export const domain3Cards: Flashcard[] = [
     front: 'Where should MCP server secrets (API keys) be stored?',
     back: 'In environment variables or a secrets manager — NEVER in .mcp.json or CLAUDE.md files which may be committed to git. Use ${ENV_VAR} syntax in config files to reference env vars safely.',
   },
+  {
+    id: 'd3-11', domainId: 'domain3', lessonId: '3-6', difficulty: 'medium',
+    tags: ['ci-cd', 'json-schema'],
+    front: 'What is the full CI pattern for structured Claude output?',
+    back: 'Combine three flags: -p (non-interactive), --output-format json (machine-parseable), --json-schema (defines expected output structure). Claude\'s response is guaranteed to match the schema — no post-processing needed.',
+  },
+  {
+    id: 'd3-12', domainId: 'domain3', lessonId: '3-6', difficulty: 'easy',
+    tags: ['ci-cd', 'cli'],
+    front: 'What does the -p / --print flag do in Claude Code CLI?',
+    back: 'Runs Claude in non-interactive mode. Claude processes the prompt, outputs the result, and exits. No conversation, no follow-up. Essential for scripts and CI pipelines where no human is present.',
+  },
 ];

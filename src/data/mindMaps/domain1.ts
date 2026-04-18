@@ -70,6 +70,8 @@ const domain1MindMap: DomainMindMap = {
         children: [
           { id: 'd1-decomp', label: 'Task Decomposition', detail: 'Break complex into ordered subtasks with deps', color: '#a78bfa' },
           { id: 'd1-session', label: 'Session State', detail: 'Prune, summarize, persist externally', color: '#a78bfa' },
+          { id: 'd1-fork', label: 'fork_session', detail: 'Branch conversation, independent exploration', color: '#a78bfa' },
+          { id: 'd1-explore', label: 'Explore subagent', detail: 'Dedicated codebase navigator, own context', color: '#a78bfa' },
           { id: 'd1-retry', label: 'Retry & Recovery', detail: 'Only transient errors, exponential backoff', color: '#a78bfa' },
           { id: 'd1-plan', label: 'Plan-then-Execute', detail: 'Plan mode for large migrations', color: '#a78bfa' },
         ],

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useCourse } from '../context/CourseContext';
 import {
   CheckCircle2, XCircle, ChevronRight, Trophy, RotateCcw,
@@ -13,6 +13,33 @@ export interface QuizQuestion {
   trap?: string;
 }
 
+// Deterministic shuffle using a seed (Fisher-Yates)
+function seededShuffle<T>(arr: T[], seed: number): T[] {
+  const result = [...arr];
+  let s = seed;
+  for (let i = result.length - 1; i > 0; i--) {
+    s = (s * 16807 + 0) % 2147483647;
+    const j = s % (i + 1);
+    [result[i], result[j]] = [result[j], result[i]];
+  }
+  return result;
+}
+
+interface ShuffledQuestion extends QuizQuestion {
+  shuffledOptions: string[];
+  shuffledCorrectIndex: number;
+}
+
+function shuffleQuestions(questions: QuizQuestion[], seed: number): ShuffledQuestion[] {
+  return questions.map((q, qi) => {
+    const indices = q.options.map((_, i) => i);
+    const shuffledIndices = seededShuffle(indices, seed + qi * 31);
+    const shuffledOptions = shuffledIndices.map(i => q.options[i]);
+    const shuffledCorrectIndex = shuffledIndices.indexOf(q.correctIndex);
+    return { ...q, shuffledOptions, shuffledCorrectIndex };
+  });
+}
+
 interface Props {
   questions: QuizQuestion[];
   title?: string;
@@ -22,6 +49,15 @@ interface Props {
 
 export default function DomainQuiz({ questions, title = 'Exam Practice Quiz', domainColor = 'blue', domainId }: Props) {
   const { setQuizScore } = useCourse();
+
+  // Shuffle options with daily seed (consistent within a session/day)
+  const shuffled = useMemo(() => {
+    const today = new Date().toISOString().split('T')[0];
+    let seed = 0;
+    for (let i = 0; i < today.length; i++) seed = seed * 31 + today.charCodeAt(i);
+    return shuffleQuestions(questions, Math.abs(seed));
+  }, [questions]);
+
   const [currentQ, setCurrentQ] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [answered, setAnswered] = useState(false);
@@ -29,8 +65,8 @@ export default function DomainQuiz({ questions, title = 'Exam Practice Quiz', do
   const [finished, setFinished] = useState(false);
   const [answers, setAnswers] = useState<(boolean | null)[]>(new Array(questions.length).fill(null));
 
-  const q = questions[currentQ];
-  const isCorrect = selectedAnswer === q.correctIndex;
+  const q = shuffled[currentQ];
+  const isCorrect = selectedAnswer === q.shuffledCorrectIndex;
 
   const colorMap: Record<string, { bg: string; border: string; text: string; badge: string; gradient: string }> = {
     blue:    { bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-700', badge: 'bg-blue-100 text-blue-700', gradient: 'from-blue-500 to-cyan-500' },
@@ -45,7 +81,7 @@ export default function DomainQuiz({ questions, title = 'Exam Practice Quiz', do
     if (answered) return;
     setSelectedAnswer(index);
     setAnswered(true);
-    const correct = index === q.correctIndex;
+    const correct = index === q.shuffledCorrectIndex;
     if (correct) setScore(s => s + 1);
     const newAnswers = [...answers];
     newAnswers[currentQ] = correct;
@@ -113,7 +149,7 @@ export default function DomainQuiz({ questions, title = 'Exam Practice Quiz', do
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-sm text-slate-900 dark:text-white">{q.question}</p>
                     <p className={`text-sm mt-1 ${wasCorrect ? 'text-green-700' : 'text-red-700'}`}>
-                      {wasCorrect ? '✓ Correct' : `✗ Correct answer: ${q.options[q.correctIndex]}`}
+                      {wasCorrect ? '✓ Correct' : `✗ Correct answer: ${q.shuffledOptions[q.shuffledCorrectIndex]}`}
                     </p>
                     {!wasCorrect && (
                       <p className="text-sm text-slate-600 mt-1">{q.explanation}</p>
@@ -168,13 +204,13 @@ export default function DomainQuiz({ questions, title = 'Exam Practice Quiz', do
 
       {/* Options */}
       <div className="space-y-2">
-        {q.options.map((opt, i) => {
+        {q.shuffledOptions.map((opt, i) => {
           const letter = String.fromCharCode(65 + i);
           let optClass = 'border-slate-200 hover:border-slate-300 hover:bg-slate-50 cursor-pointer';
           let letterBg = 'bg-slate-100 text-slate-600';
 
           if (answered) {
-            if (i === q.correctIndex) {
+            if (i === q.shuffledCorrectIndex) {
               optClass = 'border-green-300 bg-green-50';
               letterBg = 'bg-green-500 text-white';
             } else if (i === selectedAnswer && !isCorrect) {
@@ -198,10 +234,10 @@ export default function DomainQuiz({ questions, title = 'Exam Practice Quiz', do
                 {letter}
               </span>
               <span className="text-sm text-slate-700 dark:text-slate-300">{opt}</span>
-              {answered && i === q.correctIndex && (
+              {answered && i === q.shuffledCorrectIndex && (
                 <CheckCircle2 className="w-5 h-5 text-green-500 ml-auto flex-shrink-0" />
               )}
-              {answered && i === selectedAnswer && !isCorrect && i !== q.correctIndex && (
+              {answered && i === selectedAnswer && !isCorrect && i !== q.shuffledCorrectIndex && (
                 <XCircle className="w-5 h-5 text-red-500 ml-auto flex-shrink-0" />
               )}
             </button>
@@ -246,7 +282,7 @@ export default function DomainQuiz({ questions, title = 'Exam Practice Quiz', do
                 <Sparkles className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
                 <p className="text-sm text-green-700">
                   <span className="font-semibold">Correct answer: </span>
-                  {q.options[q.correctIndex]}
+                  {q.shuffledOptions[q.shuffledCorrectIndex]}
                 </p>
               </div>
             )}

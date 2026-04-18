@@ -38,12 +38,14 @@ const domain4QuickRef: QuickRefData = {
         { title: '4.4 Validation, Retry & Feedback Loops', points: [
           'Retry-with-error-feedback: append specific validation errors to the prompt on retry',
           'Retries fix FORMAT errors, NOT missing/absent information',
+          'Pydantic: schema validation (type, required, enum) + semantic validation (custom validators)',
+          'Pydantic validation-retry loop: parse → ValidationError → extract errors → feed to Claude → retry',
+          'field_validator for single-field rules, model_validator for cross-field rules',
           'Semantic validation: calculated_total vs stated_total, conflict_detected booleans',
           'detected_pattern fields enable systematic analysis of false positive patterns',
           'Self-correction flows: extract cross-check fields alongside primary data',
           'Retry ineffective when required info is absent from source document',
           'Retry effective for: format mismatches, structural output errors, wrong enum values',
-          'Include original doc + failed extraction + specific errors for model self-correction',
         ] },
         { title: '4.5 Batch Processing Strategies', points: [
           'Message Batches API: 50% cost savings, up to 24-hour processing window',

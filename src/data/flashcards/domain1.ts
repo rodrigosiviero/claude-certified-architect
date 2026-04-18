@@ -61,4 +61,16 @@ export const domain1Cards: Flashcard[] = [
     front: 'Why is session resumption important for production agentic systems?',
     back: 'Long-running tasks may be interrupted (network issues, timeouts, rate limits). Resumption allows the agent to continue from where it stopped instead of redoing all work, saving time and cost.',
   },
+  {
+    id: 'd1-11', domainId: 'domain1', lessonId: '1-7', difficulty: 'medium',
+    tags: ['session', 'fork'],
+    front: 'What is fork_session and when would you use it?',
+    back: 'Programmatically creates a branch of the current conversation into a new independent session. The fork starts from the current state but diverges. Use for risky approaches — if the fork fails, the original session is untouched. Useful for parallel exploration.',
+  },
+  {
+    id: 'd1-12', domainId: 'domain1', lessonId: '1-7', difficulty: 'medium',
+    tags: ['subagent', 'explore'],
+    front: 'What is the Explore subagent and why does it matter for large codebases?',
+    back: 'A dedicated subagent that navigates directories, reads files, and returns structured findings in its own context. The main agent receives only the summary, keeping its context clean. Critical for large codebases where direct exploration would fill the context window.',
+  },
 ];

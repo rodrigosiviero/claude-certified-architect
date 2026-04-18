@@ -296,7 +296,22 @@ Document test fixtures and setup in CLAUDE.md so Claude knows the context. CI se
 | Document fixtures in CLAUDE.md | Claude needs test context |
 | Set clear exit criteria | Know what "done" means |
 
-> ⚠️ **Exam trap:** "Running \`claude\` without -p in CI" is a classic wrong answer. CI is non-interactive — always use -p.`,
+> ⚠️ **Exam trap:** "Running \`claude\` without -p in CI" is a classic wrong answer. CI is non-interactive — always use -p.
+
+### Structured CI Output with --json-schema
+
+The full CI pattern combines three flags:
+- \`-p\` for non-interactive mode
+- \`--output-format json\` for machine-parseable output
+- \`--json-schema\` to define the expected output structure
+
+\`\`\`bash
+claude -p "Extract code issues" \\
+  --output-format json \\
+  --json-schema '{"type":"object","properties":{"issues":{"type":"array","items":{"properties":{"severity":{"type":"string","enum":["high","medium","low"]},"file":{"type":"string"},"description":{"type":"string"}}}}}}'
+\`\`\`
+
+Claude's response is guaranteed to match the schema — no post-processing needed.`,
   },
 ];
 

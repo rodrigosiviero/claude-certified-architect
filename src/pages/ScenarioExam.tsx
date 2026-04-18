@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { AlertTriangle, ArrowLeft, ArrowRight, BarChart3, Brain, Briefcase, CheckCircle2, ChevronDown, ChevronRight, Clock, FlaskConical, Lightbulb, RotateCcw, Scroll, Target, Trophy, XCircle } from 'lucide-react';
 import { scenarios } from '../data/scenarios';
 import type { Scenario } from '../data/scenarios';
+import { shuffleAllOptions } from '../utils/shuffle';
 
 type Domain = 'd1' | 'd2' | 'd3' | 'd4' | 'd5';
 
@@ -32,6 +33,8 @@ export default function ScenarioExam() {
   const [answers, setAnswers] = useState<Record<number, number>>({});
   const [currentQ, setCurrentQ] = useState(0);
   const [expandedReview, setExpandedReview] = useState<number | null>(null);
+
+  const shuffled = useMemo(() => shuffleAllOptions(scenarios), [scenarios]);
   const [filterDomain, setFilterDomain] = useState<Domain | 'all'>('all');
   const [startTime, setStartTime] = useState(0);
   const [endTime, setEndTime] = useState(0);
@@ -40,14 +43,14 @@ export default function ScenarioExam() {
 
   const getScore = () => {
     let correct = 0;
-    scenarios.forEach((q) => { if (answers[q.id] === q.correct) correct++; });
+    scenarios.forEach((q) => { if (answers[q.id] === q.shuffledCorrect) correct++; });
     return correct;
   };
 
   const getDomainScore = (domain: Domain) => {
-    const qs = scenarios.filter((q) => q.domain === domain);
+    const qs = shuffled.filter((q) => q.domain === domain);
     let correct = 0;
-    qs.forEach((q) => { if (answers[q.id] === q.correct) correct++; });
+    qs.forEach((q) => { if (answers[q.id] === q.shuffledCorrect) correct++; });
     return { correct, total: qs.length, pct: qs.length > 0 ? Math.round((correct / qs.length) * 100) : 0 };
   };
 
@@ -75,7 +78,7 @@ export default function ScenarioExam() {
     return `${mins}m ${secs}s`;
   };
 
-  const filteredQuestions = filterDomain === 'all' ? scenarios : scenarios.filter((q) => q.domain === filterDomain);
+  const filteredQuestions = filterDomain === 'all' ? shuffled : shuffled.filter((q) => q.domain === filterDomain);
 
   // ── START ─────────────────────────────────────────────────────────────────
   if (phase === 'start') {
@@ -142,7 +145,7 @@ export default function ScenarioExam() {
 
   // ── EXAM ──────────────────────────────────────────────────────────────────
   if (phase === 'exam') {
-    const q = scenarios[currentQ];
+    const q = shuffled[currentQ];
     const meta = domainMeta[q.domain];
     const elapsed = Date.now() - startTime;
 
@@ -185,7 +188,7 @@ export default function ScenarioExam() {
           </div>
 
           <div className="space-y-2">
-            {q.options.map((opt, idx) => (
+            {q.shuffledOptions.map((opt, idx) => (
               <button
                 key={idx}
                 onClick={() => selectAnswer(q.id, idx)}
@@ -217,7 +220,7 @@ export default function ScenarioExam() {
                 key={i}
                 onClick={() => setCurrentQ(i)}
                 className={`w-3 h-3 rounded-full transition-colors ${
-                  i === currentQ ? 'bg-amber-600 scale-125' : answers[scenarios[i].id] !== undefined ? 'bg-amber-300' : 'bg-slate-200'
+                  i === currentQ ? 'bg-amber-600 scale-125' : answers[shuffled[i].id] !== undefined ? 'bg-amber-300' : 'bg-slate-200'
                 }`}
                 title={`Scenario ${i + 1}`}
               />
@@ -309,7 +312,7 @@ export default function ScenarioExam() {
         {filteredQuestions.map((q) => {
           const meta = domainMeta[q.domain];
           const userAnswer = answers[q.id];
-          const isCorrect = userAnswer === q.correct;
+          const isCorrect = userAnswer === q.shuffledCorrect;
           const isExpanded = expandedReview === q.id;
 
           return (
@@ -345,8 +348,8 @@ export default function ScenarioExam() {
 
                   {/* Options */}
                   <div className="px-5 space-y-2">
-                    {q.options.map((opt, idx) => {
-                      const isThisCorrect = idx === q.correct;
+                    {q.shuffledOptions.map((opt, idx) => {
+                      const isThisCorrect = idx === q.shuffledCorrect;
                       const isThisUser = idx === userAnswer;
                       let cls = 'border-slate-200';
                       if (isThisCorrect) cls = 'border-green-400 bg-green-50';

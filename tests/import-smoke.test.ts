@@ -106,9 +106,9 @@ describe('data file imports resolve', () => {
     }
   });
 
-  it('50 flashcards import', async () => {
+  it('flashcards import', async () => {
     const mod = await import('../src/data/flashcards/index.ts');
-    expect(mod.allFlashcards.length).toBe(50);
+    expect(mod.allFlashcards.length).toBeGreaterThan(50);
     expect(Object.keys(mod.flashcardsByDomain).length).toBe(5);
   });
 });

@@ -233,6 +233,31 @@ Extract \`calculated_total\` alongside \`stated_total\` to flag discrepancies. A
 
 Add \`detected_pattern\` to structured findings to track which code constructs trigger findings. This enables systematic analysis of false positive patterns when developers dismiss findings.
 
+### Pydantic for Schema + Semantic Validation
+
+Use **Pydantic models** to validate Claude's structured output at two levels:
+
+1. **Schema validation** — Pydantic catches type errors, missing required fields, enum violations (same as JSON schema but in Python)
+2. **Semantic validation** — custom validators catch business logic errors that JSON schema cannot
+
+\`\`\`python
+from pydantic import BaseModel, field_validator
+
+class Invoice(BaseModel):
+    vendor: str
+    total: float
+    date: str
+
+    @field_validator('total')
+    @classmethod
+    def total_positive(cls, v):
+        if v < 0:
+            raise ValueError('total cannot be negative')
+        return v
+\`\`\`
+
+**Validation-retry loop**: Parse Claude's tool_use output with Pydantic → if \`ValidationError\`, extract specific error messages → feed back to Claude in retry prompt → Claude sees "total must be positive (got -5)" and corrects.
+
 > ⚠️ **Exam trap:** "Retry when the source document doesn't contain the information" is wrong. Retries fix FORMAT, not ABSENCE.`,
   },
   {

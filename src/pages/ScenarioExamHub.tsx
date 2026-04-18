@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { scenarioExams } from '../data/scenarioExams';
 import { useCourse } from '../context/CourseContext';
+import { shuffleAllOptions } from '../utils/shuffle';
 import {
   ArrowLeft, ArrowRight, BarChart3, Brain, CheckCircle2, ChevronDown,
   Clock, FlaskConical, Lightbulb, RotateCcw, Trophy, XCircle, Target,
@@ -43,14 +44,16 @@ export default function ScenarioExamHub() {
 
   const answeredCount = Object.keys(answers).length;
   const exam = selectedExam !== null ? scenarioExams[selectedExam] : null;
-  const questions = exam?.questions || [];
-  const q = questions[currentQ];
+  const rawQuestions = exam?.questions || [];
+  const questions = useMemo(() => shuffleAllOptions(rawQuestions), [rawQuestions]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const q = questions[currentQ] as any;
   const ec = selectedExam !== null ? examColors[selectedExam] : examColors[0];
 
   // Save score when exam completes
   useEffect(() => {
     if (phase === 'results' && exam) {
-      const s = questions.reduce((acc, q, i) => acc + (answers[i] === q.correct ? 1 : 0), 0);
+      const s = questions.reduce((acc, q, i) => acc + (answers[i] === q.shuffledCorrect ? 1 : 0), 0);
       const p = Math.round((s / questions.length) * 100);
       setQuizScore(`scenario-exam-${exam.id}`, p);
     }
@@ -98,13 +101,13 @@ export default function ScenarioExamHub() {
   };
 
   // ── Score calc ─────────────────────────────────────────────
-  const score = questions.reduce((acc, q, i) => acc + (answers[i] === q.correct ? 1 : 0), 0);
+  const score = questions.reduce((acc, q, i) => acc + (answers[i] === q.shuffledCorrect ? 1 : 0), 0);
   const filteredQuestions = filterDomain === 'all' ? questions : questions.filter(q => q.domain === filterDomain);
 
   // ── Domain breakdown ───────────────────────────────────────
   const domainBreakdown = ['d1','d2','d3','d4','d5'].map(d => {
     const qs = questions.filter(q => q.domain === d);
-    const correct = qs.filter(q => answers[q.id - 1] === q.correct).length;
+    const correct = qs.filter(q => answers[q.id - 1] === q.shuffledCorrect).length;
     return { domain: d, total: qs.length, correct };
   });
 
@@ -216,7 +219,7 @@ export default function ScenarioExamHub() {
   // EXAM
   // ══════════════════════════════════════════════════════════════
   if (phase === 'exam' && q) {
-    const isCorrect = selectedAnswer === q.correct;
+    const isCorrect = selectedAnswer === q.shuffledCorrect;
     const dm = domainMeta[q.domain];
     const progress = ((currentQ + (showFeedback ? 1 : 0)) / questions.length) * 100;
 
@@ -261,9 +264,9 @@ export default function ScenarioExamHub() {
 
           {/* Options */}
           <div className="space-y-3 mb-5">
-            {q.options.map((opt, i) => {
+            {q.shuffledOptions.map((opt, i) => {
               const isSelected = selectedAnswer === i;
-              const isCorrectOption = i === q.correct;
+              const isCorrectOption = i === q.shuffledCorrect;
               let optClasses = 'bg-white border-slate-200 hover:border-slate-400';
               if (showFeedback) {
                 if (isCorrectOption) optClasses = 'bg-emerald-50 border-emerald-400 ring-2 ring-emerald-200';
@@ -402,7 +405,7 @@ export default function ScenarioExamHub() {
           <div className="space-y-2">
             {filteredQuestions.map((q, idx) => {
               const userAnswer = answers[q.id - 1];
-              const correct = userAnswer === q.correct;
+              const correct = userAnswer === q.shuffledCorrect;
               const expanded = expandedReview === q.id;
 
               return (
@@ -422,8 +425,8 @@ export default function ScenarioExamHub() {
                   {expanded && (
                     <div className="px-3 pb-3 border-t border-slate-200 pt-3">
                       <p className="text-sm text-slate-600 mb-2"><strong>Scenario:</strong> {q.scenario}</p>
-                      <p className="text-sm text-slate-600 mb-2"><strong>Your answer:</strong> {userAnswer !== undefined ? q.options[userAnswer] : 'Not answered'}</p>
-                      <p className="text-sm text-emerald-700 mb-2"><strong>Correct:</strong> {q.options[q.correct]}</p>
+                      <p className="text-sm text-slate-600 mb-2"><strong>Your answer:</strong> {userAnswer !== undefined ? q.shuffledOptions[userAnswer] : 'Not answered'}</p>
+                      <p className="text-sm text-emerald-700 mb-2"><strong>Correct:</strong> {q.shuffledOptions[q.shuffledCorrect]}</p>
                       <p className="text-sm text-slate-600">{q.explanation}</p>
                     </div>
                   )}

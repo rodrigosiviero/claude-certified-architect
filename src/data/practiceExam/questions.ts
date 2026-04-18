@@ -741,6 +741,81 @@ const questions: Question[] = [
     correct: 2,
     explanation: 'Require publication dates in structured outputs. Annotate conflicts with source attribution. The 10-month gap likely explains the difference. Let the coordinator decide reconciliation — don\'t average or pick silently.',
   },
+  // ═══════════════════════════════════════════════════════════════════════════
+  // APPENDIX-ALIGNED ADDITIONS
+  // ═══════════════════════════════════════════════════════════════════════════
+  {
+    id: 61, domain: 'd1', domainLabel: '1.7 Session State',
+    question: 'You\'re working on a complex refactoring and want to try a risky approach without losing your current session state. What should you use?',
+    options: [
+      'A) Start a new session and recreate the context manually',
+      'B) Use fork_session to branch from the current conversation state',
+      'C) Use --resume to save the current state first',
+      'D) Use /compact to free up context before trying',
+    ],
+    correct: 1,
+    explanation: 'fork_session creates a branch of the current conversation into a new independent session. The fork starts from the current state but diverges. If the risky approach fails, the original session is untouched.',
+  },
+  {
+    id: 62, domain: 'd1', domainLabel: '1.7 Session State',
+    question: 'Your agent needs to explore a codebase with 200+ files. Direct exploration fills the context window and causes degradation. What pattern should you use?',
+    options: [
+      'A) Use /compact after every 10 files',
+      'B) Spawn an Explore subagent that navigates files in its own context and returns only structured findings',
+      'C) Increase max_tokens to handle more files',
+      'D) Read only file names, not contents',
+    ],
+    correct: 1,
+    explanation: 'The Explore subagent navigates directories, reads files, and returns structured findings — all in its own context. The main agent receives only the summary, keeping its context clean. This is the recommended pattern for large codebases.',
+  },
+  {
+    id: 63, domain: 'd3', domainLabel: '3.6 CI/CD Integration',
+    question: 'Your CI pipeline needs Claude to output structured code review results that match a specific schema. Which combination of flags achieves this?',
+    options: [
+      'A) claude -p "review this code"',
+      'B) claude -p "review this code" --output-format json',
+      'C) claude -p "review this code" --output-format json --json-schema \'{"type":"object",...}\' ',
+      'D) claude "review this code" --json',
+    ],
+    correct: 2,
+    explanation: 'The full CI pattern combines: -p (non-interactive), --output-format json (machine-parseable), --json-schema (defines expected output structure). Only this combination guarantees non-interactive, structured, schema-validated output.',
+  },
+  {
+    id: 64, domain: 'd4', domainLabel: '4.3 Structured Output',
+    question: 'Your extraction schema has a "phone_number" field, but not all source documents contain phone numbers. Claude sometimes fabricates phone numbers to fill the required field. What should you do?',
+    options: [
+      'A) Make the field required and add a retry loop',
+      'B) Add more examples of phone numbers in the prompt',
+      'C) Make the field optional AND nullable — gives Claude an explicit "not found" option instead of forcing fabrication',
+      'D) Use tool_choice "any" instead of forced tool selection',
+    ],
+    correct: 2,
+    explanation: 'When a field might not be present in the source, make it optional AND nullable. This gives Claude an explicit "I don\'t know" option (null) instead of forcing it to fabricate a value. Over-marking fields as required without nullable causes hallucination.',
+  },
+  {
+    id: 65, domain: 'd4', domainLabel: '4.4 Validation & Retry',
+    question: 'You\'re validating Claude\'s extraction output. JSON schema catches type errors and missing fields, but you also need to catch semantic errors like negative amounts and inconsistent dates. What should you use?',
+    options: [
+      'A) Add more fields to the JSON schema',
+      'B) Use Pydantic with custom field_validator and model_validator for business logic rules',
+      'C) Increase max_tokens so Claude thinks more carefully',
+      'D) Add a second Claude call to validate the first',
+    ],
+    correct: 1,
+    explanation: 'Pydantic validates at two levels: schema validation (type, required, enum) and semantic validation via custom validators (field_validator for single-field rules, model_validator for cross-field rules). Feed ValidationError messages back to Claude for targeted retry.',
+  },
+  {
+    id: 66, domain: 'd4', domainLabel: '4.3 Structured Output',
+    question: 'You\'re building a ticket classifier. Categories are "bug", "feature", "question", but some tickets don\'t fit neatly. Claude keeps forcing ambiguous tickets into wrong categories. What pattern should you use?',
+    options: [
+      'A) Add more categories to the enum',
+      'B) Use the "other" + detail string pattern: add "other" to enum with a companion detail field',
+      'C) Remove the enum and let Claude classify freely',
+      'D) Use a confidence threshold to reject ambiguous tickets',
+    ],
+    correct: 1,
+    explanation: 'The "other" + detail string pattern adds "other" to the enum plus a companion detail field (e.g., category_detail: string). This prevents Claude from shoehorning ambiguous items into wrong predefined categories while still collecting the information.',
+  },
 ];
 
 export default questions;

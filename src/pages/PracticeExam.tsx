@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, BarChart3, BookOpen, Brain, CheckCircle2, ChevronDown, ChevronRight, Clock, GraduationCap, Lightbulb, RotateCcw, Target, Trophy, XCircle } from 'lucide-react';
 import { questions } from '../data/practiceExam';
 import type { Question } from '../data/practiceExam';
+import { shuffleAllOptions } from '../utils/shuffle';
 
 type Domain = 'd1' | 'd2' | 'd3' | 'd4' | 'd5';
 
@@ -25,22 +26,24 @@ export default function PracticeExam() {
   const [startTime, setStartTime] = useState(0);
   const [endTime, setEndTime] = useState(0);
 
+  const shuffled = useMemo(() => shuffleAllOptions(questions), [questions]);
+
   const answeredCount = Object.keys(answers).length;
   const allAnswered = answeredCount === questions.length;
 
   const getScore = () => {
     let correct = 0;
-    questions.forEach((q) => {
-      if (answers[q.id] === q.correct) correct++;
+    shuffled.forEach((q) => {
+      if (answers[q.id] === q.shuffledCorrect) correct++;
     });
     return correct;
   };
 
   const getDomainScore = (domain: Domain) => {
-    const domainQs = questions.filter((q) => q.domain === domain);
+    const domainQs = shuffled.filter((q) => q.domain === domain);
     let correct = 0;
     domainQs.forEach((q) => {
-      if (answers[q.id] === q.correct) correct++;
+      if (answers[q.id] === q.shuffledCorrect) correct++;
     });
     return { correct, total: domainQs.length, pct: Math.round((correct / domainQs.length) * 100) };
   };
@@ -71,7 +74,7 @@ export default function PracticeExam() {
 
   const filteredQuestions = filterDomain === 'all'
     ? questions
-    : questions.filter((q) => q.domain === filterDomain);
+    : shuffled.filter((q) => q.domain === filterDomain);
 
   // ── START SCREEN ──────────────────────────────────────────────────────────
   if (phase === 'start') {
@@ -121,7 +124,7 @@ export default function PracticeExam() {
 
   // ── EXAM SCREEN ───────────────────────────────────────────────────────────
   if (phase === 'exam') {
-    const q = questions[currentQ];
+    const q = shuffled[currentQ];
     const meta = domainMeta[q.domain];
     const elapsed = Date.now() - startTime;
 
@@ -163,7 +166,7 @@ export default function PracticeExam() {
 
           {/* Options */}
           <div className="space-y-2">
-            {q.options.map((opt, idx) => (
+            {q.shuffledOptions.map((opt, idx) => (
               <button
                 key={idx}
                 onClick={() => selectAnswer(q.id, idx)}
@@ -201,7 +204,7 @@ export default function PracticeExam() {
                   className={`w-2 h-2 rounded-full transition-all shrink-0 ${
                     i === currentQ
                       ? 'bg-violet-600 scale-150 ring-2 ring-violet-300'
-                      : answers[questions[i].id] !== undefined
+                      : answers[shuffled[i].id] !== undefined
                       ? 'bg-violet-300'
                       : 'bg-slate-200'
                   }`}
@@ -307,7 +310,7 @@ export default function PracticeExam() {
         {filteredQuestions.map((q) => {
           const meta = domainMeta[q.domain];
           const userAnswer = answers[q.id];
-          const isCorrect = userAnswer === q.correct;
+          const isCorrect = userAnswer === q.shuffledCorrect;
           const isExpanded = expandedReview === q.id;
 
           return (
@@ -340,8 +343,8 @@ export default function PracticeExam() {
 
                   {/* Options with correct/wrong marking */}
                   <div className="space-y-2">
-                    {q.options.map((opt, idx) => {
-                      const isThisCorrect = idx === q.correct;
+                    {q.shuffledOptions.map((opt, idx) => {
+                      const isThisCorrect = idx === q.shuffledCorrect;
                       const isThisUser = idx === userAnswer;
                       let cls = 'border-slate-200';
                       if (isThisCorrect) cls = 'border-green-400 bg-green-50';

@@ -71,6 +71,8 @@ const domain3MindMap: DomainMindMap = {
         color: '#34d399',
         children: [
           { id: 'd3-pflag', label: '-p flag', detail: 'MANDATORY — no interactive mode in CI', color: '#6ee7b7' },
+          { id: 'd3-jsonout', label: '--output-format json', detail: 'Machine-parseable CI output', color: '#6ee7b7' },
+          { id: 'd3-jsonschema', label: '--json-schema', detail: 'Define expected output structure', color: '#6ee7b7' },
           { id: 'd3-stateless', label: 'Stateless', detail: 'No memory between runs, inject everything', color: '#6ee7b7' },
           { id: 'd3-separate', label: 'Separate sessions', detail: 'Gen + Review in different sessions', color: '#6ee7b7' },
           { id: 'd3-fixtures', label: 'CLAUDE.md for CI', detail: 'Document test fixtures and setup', color: '#6ee7b7' },

@@ -49,6 +49,7 @@ const domain4MindMap: DomainMindMap = {
         color: '#a78bfa',
         children: [
           { id: 'd4-feedback', label: 'Error-feedback retry', detail: 'Append specific validation errors on retry', color: '#c4b5fd' },
+          { id: 'd4-pydantic', label: 'Pydantic validation', detail: 'Schema + semantic validation, field_validator', color: '#c4b5fd' },
           { id: 'd4-noretry', label: "Won't fix absence", detail: 'Info missing from source → add context, not retry', color: '#c4b5fd' },
           { id: 'd4-selfcheck', label: 'Self-correction fields', detail: 'calculated_total vs stated_total, conflict_detected', color: '#c4b5fd' },
           { id: 'd4-pattern', label: 'detected_pattern', detail: 'Track false positive patterns for analysis', color: '#c4b5fd' },
