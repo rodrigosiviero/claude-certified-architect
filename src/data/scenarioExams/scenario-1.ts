@@ -167,7 +167,7 @@ const exam: ScenarioExamData = {
     },
     // D4 — Prompt Engineering
     {
-      id: 13, examScenario: 1, domain: 'd4', domainLabel: 'System Prompt',
+      id: 13, examScenario: 1, domain: 'd4', domainLabel: 'Explicit Criteria',
       scenario: 'Your support agent has a 500-word system prompt with 15 refund types, 5 escalation criteria, data format rules, and compliance notes. Claude misses escalation criteria 40% of the time.',
       question: 'What is the most likely cause and fix?',
       options: [

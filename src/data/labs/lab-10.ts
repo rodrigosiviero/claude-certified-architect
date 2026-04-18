@@ -2,7 +2,7 @@ const lab_10 = {
     id: 'lab-10',
     title: 'Prompt Engineering Masterclass',
     domain: 'Domain 4 — Prompt Engineering',
-    examTopics: ['4.1 System Prompts', '4.2 Few-Shot', '4.3 Extended Thinking'],
+    examTopics: ['4.1 Explicit Criteria', '4.2 Few-Shot Examples', '4.3 Structured Output'],
     difficulty: 'Intermediate',
     duration: '40 min',
     description: 'Master the three pillars of prompt engineering: explicit system prompts, few-shot examples, and extended thinking for complex reasoning.',

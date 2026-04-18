@@ -3,9 +3,9 @@ import type { LessonExplanation } from './types';
 export const domain5Explanations: LessonExplanation[] = [
   {
     id: '5-1',
-    explanation: `## Context Management
+    explanation: `## Context Management Across Long Interactions
 
-Claude has a limited context window and attention isn't uniform — what you put where matters.
+As conversations grow, context degrades. Critical information gets lost, tool results bloat token usage, and summarization distorts facts.
 
 \`\`\`mermaid
 flowchart LR
@@ -21,280 +21,336 @@ flowchart LR
 
 ### "Lost in the Middle" Effect
 
-Claude attends most to the **beginning and end** of context — middle gets less attention. Put critical info at START and END.
+Models reliably process information at the **beginning and end** of long inputs but may omit findings from **middle sections**. Put key findings summaries at the beginning of aggregated inputs.
 
-### State Tracking > Conversation Memory
+### Tool Result Accumulation
 
-| Approach | Reliability |
-|---|---|
-| Rely on chat history | Fragile — gets summarized, details lost |
-| Use structured files (JSON/YAML) | Durable — exact state persists |
+Tool results accumulate in context and consume tokens **disproportionately to their relevance**. Example: 40+ fields per order lookup when only 5 are relevant.
 
-### Scratchpad Files for Multi-Phase Work
+**Solution:** Trim verbose tool outputs to only relevant fields before they accumulate in context. Keep only return-relevant fields from order lookups.
 
-For multi-phase tasks:
-1. Write phase results to **files**
-2. Reference files in the next phase
-3. Don't rely on conversation memory across phases
+### Progressive Summarization Risks
 
-### Progressive Summarization Risk
+Condensing numerical values, percentages, dates, and customer-stated expectations into vague summaries loses critical detail. Specific amounts become "some amount", dates become "recently".
 
-Progressive summarization is **lossy** — specific numbers and details get rounded or dropped over multiple rounds. Use files, not chat history, for data that must be exact.
+### "Case Facts" Block
 
-> ⚠️ **Exam tip:** "Lost in the middle" + state tracking with files are the two most tested concepts here.`,
+Extract transactional facts (amounts, dates, order numbers, statuses) into a persistent **"case facts" block** included in each prompt, outside summarized history:
+
+\`\`\`json
+{
+  "case_facts": {
+    "order_id": "ORD-78923",
+    "amount": "$149.99",
+    "order_date": "2025-01-15",
+    "status": "returned",
+    "issue": "wrong size"
+  }
+}
+\`\`\`
+
+### Subagent Metadata
+
+Require subagents to include **metadata** (dates, source locations, methodological context) in structured outputs to support accurate downstream synthesis. Modify upstream agents to return structured data instead of verbose reasoning chains.
+
+> 💡 **Exam tip:** Know the difference between trimming tool outputs (proactive) vs summarizing history (lossy). Case facts blocks persist exact values.`,
   },
   {
     id: '5-2',
-    explanation: `## Escalation Triggers
+    explanation: `## Escalation & Ambiguity Resolution
 
-Knowing when to escalate to a human vs when to keep helping is critical for production AI systems.
+Knowing when to escalate, when to resolve, and when to ask for clarification.
 
 \`\`\`mermaid
 flowchart LR
-    M[User Message] --> E{Explicit request?}
-    E -->|"Talk to a human"<br/>"I want a real person"| ESC["⚡ IMMEDIATE<br/>escalation"]
-    E -->|Not explicit| S{Sentiment?}
-    S -->|"This is frustrating"<br/>"ugh"| HELP["Continue helping<br/>Do NOT escalate"]
-    S -->|Neutral| A["Attempt first<br/>Escalate if persists"]
+    M[Customer Message] --> E{Explicit request<br/>for human?}
+    E -->|"I want to talk<br/>to a person"| ESC["⚡ IMMEDIATE<br/>escalation"]
+    E -->|Not explicit| R{Can agent<br/>resolve?}
+    R -->|Yes, straightforward| H["Offer to resolve<br/>Acknowledge frustration"]
+    R -->|Policy gap/ambiguous| P["Escalate —<br/>policy silent on request"]
+    R -->|Multiple matches| C["Ask for<br/>clarification"]
 
     style ESC fill:#ef4444,color:#fff
-    style HELP fill:#10b981,color:#fff
-    style A fill:#f59e0b,color:#fff
+    style H fill:#10b981,color:#fff
+    style P fill:#f59e0b,color:#fff
+    style C fill:#8b5cf6,color:#fff
 \`\`\`
 
-### Explicit = IMMEDIATE Escalation
+### Explicit = IMMEDIATE
 
 \`\`\`
-"I want to talk to a human"        → Escalate NOW (no "let me try first")
+"I want to talk to a human"        → Escalate NOW
 "Connect me to a real person"       → Escalate NOW
-"Transfer me to an agent"           → Escalate NOW
 \`\`\`
+
+Honor explicit requests immediately. No "let me try first" when the customer explicitly demands a human.
 
 ### Sentiment ≠ Trigger
 
+Frustration is NOT an escalation trigger. "This is ridiculous" → acknowledge frustration + offer resolution. Only escalate if the customer **reiterates** their preference for a human.
+
+### Sentiment and Self-Reported Confidence Are Unreliable
+
+Sentiment-based escalation and self-reported confidence scores are **unreliable proxies** for actual case complexity. A frustrated customer with a simple issue doesn't need escalation.
+
+### Policy Gaps = Escalation
+
+Escalate when policy is **ambiguous or silent** on the customer's specific request. Example: competitor price matching when policy only addresses own-site adjustments.
+
+### Multiple Matches → Clarification
+
+When tool results return multiple customer matches, **ask for additional identifiers** rather than selecting based on heuristics. Never guess.
+
 \`\`\`
-"This is so frustrating"            → Do NOT escalate, just help better
-"ugh this doesn't work"             → Do NOT escalate, just help better
-"I hate this"                       → Do NOT escalate, just help better
+❌ Picked first match by default
+✅ "I found 3 accounts. Could you provide your order number or zip code?"
 \`\`\`
 
-Frustration ≠ escalation request. Help better, don't pass the user off.
-
-### Multiple Ambiguous Matches
-
-When multiple escalation points match, **ask the user to clarify** which one they need.
-
-### Attempt-First for Non-Explicit
-
-For non-explicit requests: attempt to help first, then escalate if the request persists or you can't resolve it.
-
-> ⚠️ **Exam trap:** Escalating on "this is frustrating" is WRONG. Sentiment alone is never an escalation trigger.`,
+> ⚠️ **Exam trap:** Escalating on "this is frustrating" is wrong. Selecting the first match from multiple results is wrong.`,
   },
   {
     id: '5-3',
-    explanation: `## PII Protection
+    explanation: `## Error Propagation Across Multi-Agent Systems
 
-Personally Identifiable Information (PII) must be protected at every boundary where data flows between systems.
+In multi-agent architectures, how errors flow between agents determines whether the system recovers gracefully or cascades into failure.
 
 \`\`\`mermaid
 flowchart LR
-    U[User Input] --> R["🔴 Redact PII<br/>at tool boundary"]
-    R --> C[Claude Context]
-    C --> T[Tool Call]
-    T --> L["🔒 Safe Logging<br/>field-level redaction"]
+    S[Subagent] -->|"Structured error:<br/>type, attempted, partial,<br/>alternatives"| C[Coordinator]
+    C --> R{"Recovery possible?"}
+    R -->|Yes, transient| RT["Retry with<br/>alternatives"]
+    R -->|No, propagate| E["Escalate with<br/>full context"]
 
-    style R fill:#ef4444,color:#fff
-    style L fill:#10b981,color:#fff
+    style S fill:#3b82f6,color:#fff
+    style C fill:#10b981,color:#fff
+    style E fill:#ef4444,color:#fff
 \`\`\`
 
-### Redact at Tool Boundaries
+### Structured Error Context
 
-Tool boundaries = the point where data leaves one system and enters another. **Redact BEFORE data enters Claude's context** — prevention, not cure.
+Return structured errors that enable **intelligent coordinator recovery**:
 
-### Least Information Principle
-
-Only pass what's **strictly needed** for the task. If Claude doesn't need an SSN to answer the question, don't send it.
-
-### Common PII to Watch For
-
-- SSN, CPF, national ID numbers
-- Email addresses, phone numbers
-- Physical addresses, dates of birth
-- Financial account numbers
-- Medical records
-
-### Safe Logging
-
-\`\`\`
-❌ Log: "User john@email.com queried account 12345"
-✅ Log: "User [REDACTED] queried account [REDACTED]"
+\`\`\`json
+{
+  "error_type": "timeout",
+  "attempted_query": "SELECT * FROM orders WHERE customer_id = 123",
+  "partial_results": [{"order_id": "ORD-1", "status": "pending"}],
+  "alternatives": ["query by date range", "query by status only"]
+}
 \`\`\`
 
-Log **that** a query happened, not **what** it contained.
+### Access Failures vs Valid Empty Results
 
-### Error Messages Must NEVER Expose PII
+| Type | Meaning | Coordinator Action |
+|---|---|---|
+| **Access failure** (timeout, 500) | System couldn't reach data | Retry decision |
+| **Valid empty result** (0 matches) | System reached data, nothing found | No retry needed |
 
-\`\`\`
-❌ Error: "Failed to process SSN 123-45-6789"
-✅ Error: "Failed to process identity verification"
-\`\`\`
+Generic errors like "search unavailable" **hide valuable context** from the coordinator.
 
-> 💡 **Exam tip:** Redaction happens at tool boundaries, BEFORE Claude sees the data. Not after.`,
+### Two Anti-Patterns
+
+1. **Silently suppressing errors** — returning empty results as success hides failures
+2. **Terminating on single failure** — one subagent failing shouldn't kill the entire workflow
+
+### Subagent Local Recovery
+
+Subagents should implement **local recovery** for transient failures and only propagate errors they cannot resolve, including what was attempted and partial results.
+
+### Coverage Annotations
+
+Structure synthesis output with **coverage annotations** indicating which findings are well-supported versus which topic areas have gaps due to unavailable sources.
+
+> ⚠️ **Exam trap:** "Return empty results when a tool fails" and "terminate the whole pipeline on any error" are both anti-patterns.`,
   },
   {
     id: '5-4',
-    explanation: `## Large Workflows
+    explanation: `## Large Codebase Exploration
 
-When dealing with large datasets or long-running processes, paginate, isolate, and checkpoint.
+Extended exploration sessions degrade context quality. Agents start giving inconsistent answers and referencing "typical patterns" rather than specific classes discovered earlier.
 
 \`\`\`mermaid
-flowchart LR
-    Q[Query] --> P["Paginate<br/>LIMIT + count + summary"]
-    P --> N{Has more?}
-    N -->|Yes| M["Claude requests<br/>next page"]
-    N -->|No| D[Done]
-    
-    D --> CK["Checkpoint<br/>state manifest"]
-    CK --> |Crash?| RS["Resume from<br/>last checkpoint"]
+flowchart TB
+    M[Main Agent<br/>High-level coordination] --> S1["Subagent 1:<br/>Find all test files"]
+    M --> S2["Subagent 2:<br/>Trace refund flow"]
+    M --> S3["Subagent 3:<br/>Map API endpoints"]
+    S1 --> |"Structured findings"| M
+    S2 --> |"Structured findings"| M
+    S3 --> |"Structured findings"| M
+    M --> SP["Scratchpad files<br/>Persist key findings"]
 
-    style P fill:#3b82f6,color:#fff
-    style CK fill:#10b981,color:#fff
+    style M fill:#3b82f6,color:#fff
+    style SP fill:#10b981,color:#fff
 \`\`\`
 
-### Paginate Results
+### Context Degradation in Extended Sessions
 
+After exploring many files, models start:
+- Giving **inconsistent answers** (contradicting earlier findings)
+- Referencing "typical patterns" instead of **specific classes** discovered earlier
+- Losing track of which files were already examined
+
+### Scratchpad Files
+
+Agents maintain **scratchpad files** recording key findings. Reference them for subsequent questions to counteract context degradation.
+
+\`\`\`markdown
+# exploration-findings.md
+## Refund Flow
+- Entry point: RefundController.ts
+- Validates via RefundValidator.ts
+- Calls PaymentGateway.processRefund()
+- Tests: tests/refund/*.test.ts (12 files)
 \`\`\`
-Pattern: return first N results + total_count + has_more boolean
-\`\`\`
 
-Never dump everything at once. Let Claude request more pages if needed — don't pre-fetch everything.
+### Subagent Delegation
 
-### Subagent Isolation
+Spawn subagents to investigate **specific questions** while the main agent preserves high-level coordination:
+- "Find all test files related to refunds"
+- "Trace the authentication middleware chain"
 
-For **verbose exploration tasks**, use subagent isolation. The sub-agent does the heavy lifting without polluting the main conversation context.
+Verbose exploration output stays in the subagent — main agent gets only structured findings.
 
-### Crash Recovery
+### Crash Recovery with State Manifests
 
-Use **state manifests** — checkpoint your progress so you can resume from the last successful point if something crashes.
+Each agent exports state to a known location. Coordinator loads a manifest on resume:
 
 \`\`\`json
 {
-  "last_processed": 47,
-  "total": 200,
-  "results_so_far": [...],
-  "phase": "extraction"
+  "phase": "api_exploration",
+  "files_examined": 47,
+  "key_findings": ["..."],
+  "pending_queries": ["trace webhooks", "map cron jobs"]
 }
 \`\`\`
 
-### Stratified Quality Monitoring
+### /compact Command
 
-Measure quality **per segment**, not just overall average. A good overall score can hide terrible performance on specific segments.
+Use \`/compact\` to reduce context usage during extended exploration sessions when context fills with verbose discovery output.
 
-> 💡 **Exam tip:** Paginate with LIMIT + count + summary. Never dump all results.`,
+> 💡 **Exam tip:** Scratchpad files + subagent delegation + state manifests = the three pillars of large codebase exploration.`,
   },
   {
     id: '5-5',
-    explanation: `## Multi-Turn Operations
+    explanation: `## Human Review Workflows & Confidence Calibration
 
-Production AI conversations span multiple turns. Managing state, errors, and tool results across turns is essential.
-
-\`\`\`mermaid
-flowchart LR
-    T1["Turn 1<br/>User asks question"] --> T2["Turn 2<br/>Tool call + result"]
-    T2 --> T3["Turn 3<br/>Claude synthesizes"]
-    T3 --> T4["Turn 4<br/>User follows up"]
-    T4 --> T5["Turn 5<br/>Claude uses prior context"]
-
-    style T1 fill:#3b82f6,color:#fff
-    style T3 fill:#10b981,color:#fff
-    style T5 fill:#8b5cf6,color:#fff
-\`\`\`
-
-### State Persistence Across Turns
-
-- Use **structured state files** (JSON/YAML) for data that must survive across turns
-- Don't rely on Claude "remembering" from earlier turns for critical data
-- Conversation context is finite — important details can get pushed out
-
-### Tool Result Handling
-
-When a tool call fails:
-1. Log the error clearly
-2. Try an alternative approach if possible
-3. Ask the user for clarification if the tool can't proceed
-4. Never silently ignore tool failures
-
-### Multi-Turn Error Recovery
-
-\`\`\`
-Turn 1: Claude calls tool → Error: timeout
-Turn 2: Claude retries with simpler query → Partial success
-Turn 3: Claude combines partial results + informs user of limitation
-\`\`\`
-
-### Context Window Pressure
-
-Long multi-turn conversations fill the context window. Use:
-- Summarization of earlier turns (but beware progressive summarization loss)
-- External state files for critical data
-- Sub-agents for independent sub-tasks
-
-> 💡 **Exam tip:** Structured state files > conversation memory for multi-turn reliability.`,
-  },
-  {
-    id: '5-6',
-    explanation: `## Provenance & Attribution
-
-In production AI systems, you must know **where** every piece of information came from.
+Aggregate accuracy metrics can be dangerously misleading. 97% overall accuracy might hide 60% accuracy on a specific document type.
 
 \`\`\`mermaid
 flowchart LR
-    S1["Source A<br/>Internal docs"] --> C[Claude Response]
-    S2["Source B<br/>Tool result"] --> C
-    S3["Source C<br/>User input"] --> C
-    C --> A["Attribution<br/>'Based on Source A + B'"]
+    E[Extractions] --> S{"Confidence?"}
+    S -->|"High (>0.9)"| SR["Stratified random<br/>sampling audit"]
+    S -->|"Medium"| R["Human review<br/>with priority queue"]
+    S -->|"Low / ambiguous"| H["Immediate human<br/>review"]
+    SR --> |"Error rate > threshold"| A["Add to review queue"]
+    SR --> |"Error rate OK"| AUTO["Auto-approve"]
 
-    style A fill:#10b981,color:#fff
+    style S fill:#f59e0b,color:#fff
+    style H fill:#ef4444,color:#fff
+    style AUTO fill:#10b981,color:#fff
 \`\`\`
 
-### Why Attribution Matters
+### Aggregate Metrics Mask Problems
 
-- **Auditability** — trace any output back to its source
-- **Trust** — users can verify information
-- **Compliance** — regulations may require source tracking
-- **Debugging** — when output is wrong, find which source was incorrect
+97% overall accuracy is meaningless if it's 99% on invoices but 70% on receipts. **Validate accuracy by document type and field segment** before automating high-confidence extractions.
 
-### How to Implement
+### Stratified Random Sampling
 
-- Tag each piece of retrieved context with its source
-- Include source references in Claude's output instructions
-- Log which sources were used for each response
+Measure error rates in high-confidence extractions using **stratified random sampling**:
+1. Divide extractions into segments (by doc type, field, complexity)
+2. Sample from each segment
+3. Measure error rate per segment
+4. Detect **novel error patterns** before they spread
+
+### Field-Level Confidence Scores
+
+Have models output **field-level confidence scores**, then calibrate review thresholds using labeled validation sets:
 
 \`\`\`json
 {
-  "response": "The API rate limit is 100 req/min",
-  "sources": ["internal-api-docs.md", "rate-limits-config.yaml"],
-  "confidence": "high"
+  "vendor": {"value": "Acme Corp", "confidence": 0.95},
+  "total": {"value": 1499.99, "confidence": 0.72},
+  "category": {"value": "other", "confidence": 0.45}
 }
 \`\`\`
 
-### Source Reliability
+Route extractions with low confidence or ambiguous/contradictory source documents to human review. **Prioritize limited reviewer capacity** — not everything gets reviewed equally.
 
-Not all sources are equal. Teach Claude to:
-- Prefer official documentation over forum posts
-- Flag outdated sources
-- Note conflicts between sources
-- Express uncertainty when sources disagree
+### Calibration Process
 
-### Documentation Standards
+1. Run model on **labeled validation set**
+2. Compare confidence scores to actual accuracy
+3. Set review thresholds per field
+4. Monitor drift over time
 
-Every AI output in production should be traceable:
-- Which model version generated it
-- What sources/context were used
-- When it was generated
-- What prompt triggered it
+> ⚠️ **Exam trap:** Trusting aggregate accuracy without segmenting by document type/field is wrong. 97% overall can hide segment-specific failures.`,
+  },
+  {
+    id: '5-6',
+    explanation: `## Provenance & Uncertainty in Multi-Source Synthesis
 
-> ⚠️ **Exam tip:** Provenance = traceability. Every output must be attributable to its sources.`,
+When combining findings from multiple sources, source attribution is easily lost during summarization steps.
+
+\`\`\`mermaid
+flowchart LR
+    S1["Source A<br/>Revenue: $5.2M<br/>(Q4 report)"] --> M["Synthesis Agent"]
+    S2["Source B<br/>Revenue: $4.8M<br/>(annual filing)"] --> M
+    M --> R["Report with:<br/>✅ Claim-source mappings<br/>✅ Conflict annotations<br/>✅ Temporal dates"]
+
+    style M fill:#8b5cf6,color:#fff
+    style R fill:#10b981,color:#fff
+\`\`\`
+
+### Source Attribution Lost During Summarization
+
+When findings are compressed without preserving **claim-source mappings**, you lose traceability. "Revenue grew 8%" — according to whom?
+
+### Structured Claim-Source Mappings
+
+Require subagents to output structured mappings that downstream agents **preserve through synthesis**:
+
+\`\`\`json
+{
+  "claim": "Revenue grew 8% YoY",
+  "sources": [
+    {"url": "q4-report.pdf", "excerpt": "Total revenue $5.2M, up 8% from $4.8M", "date": "2025-01-15"},
+    {"url": "annual-filing.pdf", "excerpt": "Revenue $4.8M for fiscal year", "date": "2024-03-20"}
+  ],
+  "confidence": "high",
+  "conflicts": []
+}
+\`\`\`
+
+### Handling Conflicting Sources
+
+When credible sources disagree:
+- **Annotate conflicts with source attribution** — don't arbitrarily pick one value
+- Include both values with their sources
+- Let the coordinator decide how to reconcile
+
+\`\`\`
+❌ Average the values: ($5.2M + $4.8M) / 2 = $5.0M
+✅ "Source A reports $5.2M (Q4 report, Jan 2025). Source B reports $4.8M (annual filing, Mar 2024). Difference may reflect different reporting periods."
+\`\`\`
+
+### Temporal Data
+
+Require **publication/collection dates** in structured outputs. Different dates often explain apparent contradictions — not actual data conflicts.
+
+### Content Type Rendering
+
+Render different content types appropriately in synthesis outputs:
+- **Financial data** → tables
+- **News** → prose
+- **Technical findings** → structured lists
+
+Don't convert everything to a uniform format.
+
+### Report Structure
+
+Distinguish **well-established findings** from **contested ones** in explicit sections. Preserve original source characterizations and methodological context.
+
+> ⚠️ **Exam trap:** Averaging conflicting values without source attribution is always wrong. Annotate conflicts, don't resolve them silently.`,
   },
 ];
 

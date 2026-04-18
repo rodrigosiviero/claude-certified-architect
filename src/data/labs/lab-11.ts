@@ -2,7 +2,7 @@ const lab_11 = {
     id: 'lab-11',
     title: 'Structured Extraction Pipeline',
     domain: 'Domain 4 — Prompt Engineering',
-    examTopics: ['4.4 Structured Output', '4.5 Prompt Chaining', '4.6 Prompt Evaluation'],
+    examTopics: ['4.4 Validation & Retry', '4.5 Batch Processing', '4.6 Multi-Instance Review'],
     difficulty: 'Advanced',
     duration: '45 min',
     description: 'Build a multi-step extraction pipeline that chains prompts together, enforces structured output, and evaluates results quality.',

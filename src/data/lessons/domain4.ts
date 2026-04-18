@@ -106,199 +106,244 @@ Ambiguous cases are where few-shot adds the most value. Obvious cases Claude han
   },
   {
     id: '4-3',
-    explanation: `## Extended Thinking
+    explanation: `## Structured Output with Tool Use & JSON Schemas
 
-Extended thinking gives Claude a private scratchpad for complex multi-step reasoning — but it comes at a cost.
-
-\`\`\`mermaid
-flowchart LR
-    Q[Complex Question] --> T["🧠 Extended Thinking<br/>budget_tokens"]
-    T --> |"Low budget"| F["Fast but superficial"]
-    T --> |"High budget"| D["Thorough but slow/expensive"]
-    T --> A[Final Answer]
-
-    style T fill:#8b5cf6,color:#fff
-    style F fill:#f59e0b,color:#fff
-    style D fill:#10b981,color:#fff
-\`\`\`
-
-### When to Use Extended Thinking
-
-| Use For | Don't Use For |
-|---|---|
-| Multi-step reasoning | Simple extraction |
-| Math and calculations | Formatting tasks |
-| Complex analysis | Classification |
-| Logical deductions | Lookup tasks |
-
-### budget_tokens
-
-\`budget_tokens\` controls how much "thinking" Claude does before answering:
-- **Low** = fast but superficial
-- **High** = thorough but slow and expensive
-- Set based on the complexity level of the task
-
-### Key Facts
-
-- Extended thinking content is **private to Claude** — you see the final answer only
-- It's NOT visible to tools — the scratchpad is internal
-- **Tradeoff:** accuracy ↑ vs cost/latency ↑
-
-> 💡 **Exam tip:** Don't use extended thinking for simple tasks. It's specifically for multi-step reasoning, math, and complex analysis.`,
-  },
-  {
-    id: '4-4',
-    explanation: `## Structured Output
-
-Forcing structured output with tool use + JSON schema is far more reliable than prompting "respond in JSON."
+\`tool_use\` with JSON schemas is the **most reliable approach** for guaranteed schema-compliant structured output — it eliminates JSON syntax errors entirely.
 
 \`\`\`mermaid
 flowchart LR
-    subgraph "❌ Prompt-based"
-        P1["'Respond in JSON'"]
-        P2["~90% reliable"]
-    end
-    subgraph "✅ Schema-enforced"
-        S1["tool_choice + JSON schema"]
-        S2["~100% guaranteed"]
-    end
+    D[Document] --> C[Claude]
+    C -->|tool_use| T["Extraction Tool<br/>with JSON Schema"]
+    T --> S["Guaranteed valid JSON<br/>matching your schema"]
 
-    style P1 fill:#ef4444,color:#fff
-    style S1 fill:#10b981,color:#fff
+    style C fill:#3b82f6,color:#fff
+    style T fill:#10b981,color:#fff
 \`\`\`
 
-### Tool Use + JSON Schema
+### tool_choice Options
 
-Define your output format as a tool with a JSON schema:
+| Value | Behavior | Use When |
+|---|---|---|
+| \`"auto"\` | Model **may** return text OR call a tool | Flexible — model decides |
+| \`"any"\` | Model **must** call a tool, can choose which | Multiple extraction schemas, unknown doc type |
+| \`{"type": "tool", "name": "extract_metadata"}\` | Model **must** call a **specific** named tool | Force a particular extraction before enrichment |
+
+### Schema Design Considerations
 
 \`\`\`json
 {
-  "tools": [{
-    "name": "classify_email",
-    "input_schema": {
-      "type": "object",
-      "required": ["category", "confidence", "reasoning"],
-      "properties": {
-        "category": { "type": "string", "enum": ["spam", "urgent", "normal"] },
-        "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
-        "reasoning": { "type": "string" }
-      }
+  "name": "extract_invoice",
+  "input_schema": {
+    "type": "object",
+    "required": ["vendor", "total", "line_items"],
+    "properties": {
+      "vendor": { "type": "string" },
+      "total": { "type": "number" },
+      "line_items": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "description": { "type": "string" },
+            "amount": { "type": "number" }
+          }
+        }
+      },
+      "category": {
+        "type": "string",
+        "enum": ["utilities", "services", "hardware", "other"]
+      },
+      "other_category_detail": { "type": "string" }
     }
-  }]
+  }
 }
 \`\`\`
 
-### Force with tool_choice
+### Key Design Patterns
 
-\`\`\`json
-{ "tool_choice": { "type": "tool", "name": "classify_email" } }
-\`\`\`
+- **Optional (nullable) fields** when source documents may not contain the info → prevents fabrication
+- **Enum with "other" + detail string** for extensible categories
+- **Enum with "unclear"** for ambiguous cases
+- **Format normalization rules** in prompts alongside schemas for inconsistent source formatting
 
-This forces the output format — Claude **cannot deviate** from the schema.
+### Syntax vs Semantic Errors
 
-### Retry Strategy
+| Type | Fixed by schema? | Example |
+|---|---|---|
+| **Syntax errors** | ✅ Yes — invalid JSON | Missing bracket, wrong type |
+| **Semantic errors** | ❌ No — valid but wrong | Line items don't sum to total, value in wrong field |
 
-- **Retry for FORMAT errors only** — malformed JSON, wrong types
-- **Retries DON'T fix MISSING info** — if Claude lacks context, add more context instead
-- JSON schema defines: required fields, types, enums, descriptions
-
-| Problem | Solution |
-|---|---|
-| Wrong JSON format | Retry |
-| Missing required field | Retry |
-| Wrong classification | Add more context/examples |
-| Lacking information | Provide more input data |
-
-> ⚠️ **Exam trap:** Retrying won't fix missing information. If Claude doesn't have enough context, more retries won't help — add better context or examples.`,
+> ⚠️ **Exam trap:** JSON schemas eliminate SYNTAX errors but NOT semantic errors. Line items not summing to total is a semantic error — the schema can't catch that.`,
   },
   {
-    id: '4-5',
-    explanation: `## Metaprompt
+    id: '4-4',
+    explanation: `## Validation, Retry & Feedback Loops
 
-The Metaprompt is a system prompt generator — you give it a task description and it produces an optimized system prompt.
+When extraction fails, use **retry-with-error-feedback** — but know when retries won't help.
 
 \`\`\`mermaid
 flowchart LR
-    T[Task Description] --> M[Metaprompt]
-    M --> S["Optimized System Prompt"]
-    S --> C[Claude]
-    C --> R[Better Results]
+    E["Extraction attempt"] --> V{Validation}
+    V -->|Pass| D["✅ Done"]
+    V -->|"Syntax/format error"| R["Retry with<br/>specific error feedback"]
+    R --> E
+    V -->|"Info absent"| X["❌ Retry won't help<br/>Provide more context"]
 
-    style M fill:#8b5cf6,color:#fff
-    style S fill:#10b981,color:#fff
+    style V fill:#f59e0b,color:#fff
+    style R fill:#3b82f6,color:#fff
+    style X fill:#ef4444,color:#fff
 \`\`\`
 
-### What It Does
+### Retry-with-Error-Feedback
 
-1. You describe the task in natural language
-2. The Metaprompt generates a structured system prompt with:
-   - Role definition
-   - Explicit criteria
-   - Output format specification
-   - Edge case handling
+Append **specific validation errors** to the prompt on retry:
 
-### When to Use
+\`\`\`
+Original prompt: "Extract invoice data from this document"
+Retry prompt: "Extract invoice data. Previous attempt failed:
+  - line_items total ($450) does not match stated total ($500)
+  - category 'unclear' for item 3 — please classify"
+\`\`\`
 
-- Starting a new prompt from scratch
-- Optimizing an existing prompt that's underperforming
-- Generating consistent prompt templates for a team
+### The Limits of Retry
 
-### What It Produces
+| Retry WILL fix | Retry WON'T fix |
+|---|---|
+| Format mismatches | Information absent from source document |
+| Structural output errors | Data only exists in an external doc not provided |
+| Missing required fields (Claude can infer) | Information simply doesn't exist |
+| Wrong enum values | Fundamentally insufficient context |
 
-A well-structured system prompt that includes:
-- Clear role definition for Claude
-- Explicit rules and constraints
-- Output format specification
-- Handling instructions for edge cases
+### Self-Correction Validation Patterns
 
-> 💡 **Exam tip:** The Metaprompt is about **generating** prompts, not executing them. It's a meta-level tool — "a prompt that writes prompts."`,
+Design flows where Claude cross-checks its own output:
+
+\`\`\`json
+{
+  "calculated_total": 450,
+  "stated_total": 500,
+  "conflict_detected": true,
+  "line_items": [...]
+}
+\`\`\`
+
+Extract \`calculated_total\` alongside \`stated_total\` to flag discrepancies. Add \`conflict_detected\` booleans for inconsistent source data.
+
+### detected_pattern Fields
+
+Add \`detected_pattern\` to structured findings to track which code constructs trigger findings. This enables systematic analysis of false positive patterns when developers dismiss findings.
+
+> ⚠️ **Exam trap:** "Retry when the source document doesn't contain the information" is wrong. Retries fix FORMAT, not ABSENCE.`,
+  },
+  {
+    id: '4-5',
+    explanation: `## Batch Processing Strategies
+
+The **Message Batches API** provides 50% cost savings for latency-tolerant workloads — but it's not for everything.
+
+\`\`\`mermaid
+flowchart LR
+    subgraph "Synchronous API"
+        S1["Real-time"]
+        S2["Pre-merge checks"]
+        S3["Full cost"]
+    end
+    subgraph "Batch API"
+        B1["50% cheaper"]
+        B2["Up to 24h window"]
+        B3["No latency SLA"]
+    end
+
+    style S1 fill:#3b82f6,color:#fff
+    style B1 fill:#10b981,color:#fff
+\`\`\`
+
+### When to Use Batch vs Synchronous
+
+| Use Batch API | Use Synchronous API |
+|---|---|
+| Overnight reports | Pre-merge checks (blocking) |
+| Weekly audits | Real-time chat responses |
+| Nightly test generation | Interactive tool use |
+| Non-blocking workloads | Latency-sensitive operations |
+
+### Key Constraints
+
+- **No multi-turn tool calling** within a single batch request — cannot execute tools mid-request and return results
+- **Up to 24-hour processing window** — no guaranteed latency SLA
+- **\`custom_id\` fields** for correlating batch request/response pairs
+
+### Submission Frequency
+
+Calculate batch submission frequency based on SLA constraints:
+- Example: Submit batches every 4 hours to guarantee completion within 30-hour SLA with 24-hour batch processing window
+
+### Handling Batch Failures
+
+1. Identify failed documents by \`custom_id\`
+2. Resubmit **only** failed documents with appropriate modifications
+3. Example: chunk documents that exceeded context limits before resubmitting
+
+### Prompt Refinement Before Batch
+
+Refine prompts on a **sample set** before batch-processing large volumes. This maximizes first-pass success rates and reduces iterative resubmission costs.
+
+> ⚠️ **Exam trap:** Using batch API for pre-merge checks is wrong — those are blocking workflows that need the synchronous API.`,
   },
   {
     id: '4-6',
-    explanation: `## Multi-Instance Review
+    explanation: `## Multi-Instance & Multi-Pass Review
 
-For important outputs, run **separate Claude instances** to independently evaluate the same input — then compare.
+A model reviewing its own work in the same session is biased — it retains reasoning context from generation and is less likely to question its own decisions.
 
 \`\`\`mermaid
 flowchart TB
-    I[Input] --> A["Instance A<br/>Review"]
-    I --> B["Instance B<br/>Review"]
-    I --> C["Instance C<br/>Review"]
-    A --> M[Merge Results]
-    B --> M
-    C --> M
-    M --> D["Consensus or<br/>flag disagreements"]
+    I[Input] --> G["Instance 1<br/>Generate"]
+    G --> R1["Instance 2<br/>Independent Review<br/>(no prior context)"]
+    R1 --> |"Low confidence"| H["Route to human"]
+    R1 --> |"Issues found"| R2["Instance 3<br/>Tie-breaker / Fix"]
+    R1 --> |"All good"| M["✅ Approve"]
 
-    style A fill:#3b82f6,color:#fff
-    style B fill:#10b981,color:#fff
-    style C fill:#8b5cf6,color:#fff
-    style M fill:#f59e0b,color:#fff
+    style G fill:#3b82f6,color:#fff
+    style R1 fill:#10b981,color:#fff
+    style R2 fill:#8b5cf6,color:#fff
 \`\`\`
 
-### Why Separate Instances?
+### Self-Review Limitations
 
-Using the **same session** for generation and review creates bias — Claude is more lenient reviewing its own work. Separate instances = independent evaluation.
+- A model **retains reasoning context** from generation
+- Less likely to question its own decisions in the same session
+- Self-review instructions or extended thinking don't fix this bias
+- **Independent instances** (without prior reasoning context) are more effective
 
-### When to Use
+### Multi-Pass Review for Large Codebases
 
-- Code review (generate + separate review)
-- Content moderation at scale
-- Quality assurance for critical outputs
-- Any task where mistakes are costly
+Split large reviews into focused passes to avoid **attention dilution**:
 
-### Pattern
+| Pass | Focus | Scope |
+|---|---|---|
+| **Local pass** | Individual function/method correctness | Per-file |
+| **Integration pass** | Cross-component data flow | Cross-file |
+| **Architecture pass** | Overall design, performance, security | System-wide |
 
+### Confidence-Based Routing
+
+Run verification passes where the model **self-reports confidence** alongside each finding:
+
+\`\`\`json
+{
+  "finding": "SQL injection in auth handler",
+  "confidence": 0.65,
+  "severity": "CRITICAL"
+}
 \`\`\`
-Session 1: Generate output
-Session 2: Review output independently (no access to Session 1)
-Session 3: Tie-breaker if Sessions 1 and 2 disagree
-\`\`\`
 
-### Key Principle
+Route by confidence — NOT blind trust:
+- **Low confidence** → human review
+- **Medium confidence** → senior dev review
+- **High confidence** → auto-merge (but high ≠ correct)
 
-Each instance should be **truly independent** — no shared context, no conversation history from the other sessions. Fresh start = unbiased review.
-
-> ⚠️ **Exam trap:** "Use the same conversation to review the output" is always wrong. Separate instances prevent self-review bias.`,
+> ⚠️ **Exam trap:** "Use the same session for generation and review" is always wrong. Separate instances without shared context = unbiased review.`,
   },
 ];
 

@@ -2,7 +2,7 @@ const lab_12 = {
     id: 'lab-12',
     title: 'Content Safety & Guardrails',
     domain: 'Domain 5 — Safety & Evaluation',
-    examTopics: ['5.1 Safety', '5.2 Deployment', '5.4 Red Teaming'],
+    examTopics: ['5.1 Context Management', '5.2 Escalation & Ambiguity', '5.3 Error Propagation'],
     difficulty: 'Advanced',
     duration: '40 min',
     description: 'Build a multi-layer safety pipeline: input classification, PII redaction, output filtering, and a red team harness to test defenses.',

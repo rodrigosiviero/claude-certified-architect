@@ -2,7 +2,7 @@ const lab_13 = {
     id: 'lab-13',
     title: 'Evaluation & Monitoring System',
     domain: 'Domain 5 — Safety & Evaluation',
-    examTopics: ['5.3 Evaluation Methods', '5.5 Monitoring & Observability'],
+    examTopics: ['5.4 Codebase Exploration', '5.5 Human Review & Confidence', '5.6 Provenance & Attribution'],
     difficulty: 'Advanced',
     duration: '45 min',
     description: 'Build a comprehensive evaluation framework that measures agent quality across multiple dimensions, plus a monitoring system.',

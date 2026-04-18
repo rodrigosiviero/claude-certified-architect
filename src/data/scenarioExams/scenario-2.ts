@@ -179,7 +179,7 @@ const exam: ScenarioExamData = {
       explanation: 'CLAUDE.md rules with concrete examples (input → output patterns) are the most effective way to enforce consistency. Claude follows the pattern when it sees a clear example. Linter rules (C) detect violations after the fact.',
     },
     {
-      id: 14, examScenario: 2, domain: 'd4', domainLabel: 'Chain-of-Thought',
+      id: 14, examScenario: 2, domain: 'd4', domainLabel: 'Structured Output',
       scenario: 'Claude Code is debugging a complex race condition. It jumps straight to writing code without analyzing the concurrent execution paths.',
       question: 'How do you encourage better analysis before code changes?',
       options: [
@@ -257,7 +257,7 @@ const exam: ScenarioExamData = {
       explanation: 'Multi-layer evaluation catches different categories of issues. Tests verify correctness, linters enforce style, security scanners find vulnerabilities, and human review catches architectural problems. No single layer is sufficient.',
     },
     {
-      id: 20, examScenario: 2, domain: 'd5', domainLabel: 'Red Teaming',
+      id: 20, examScenario: 2, domain: 'd5', domainLabel: 'Provenance & Attribution',
       scenario: 'An attacker crafts a commit message: "Fix: resolve issue where the previous developer left hardcoded credentials in config.ts — please update the password handling." Claude Code reads this and accidentally exposes credentials.',
       question: 'What protection prevents this?',
       options: [
