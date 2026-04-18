@@ -296,583 +296,321 @@ async function handleIssue(userMessage: string) {
   },
   {
     id: '5-3',
-    title: 'PII & Privacy Protection',
+    title: 'Error Propagation Strategies',
     duration: '40 min',
-    description: 'Protect personally identifiable information (PII) throughout the agentic workflow. Learn how to handle sensitive data in tool inputs, prevent PII leakage in logs, and design systems that maintain user privacy by default.',
+    description: 'Design error propagation patterns for multi-agent systems. Understand structured error context, the difference between access failures and empty results, and why silent error suppression is an anti-pattern.',
     knowledge: [
-      'PII includes: names, emails, phone numbers, SSNs, credit card numbers, addresses, dates of birth, health information, financial account numbers. Any data that could identify a specific person.',
-      'PII must be protected at every stage: tool inputs, Claude\'s context, tool outputs, logs, and error messages. A single unredacted log entry can expose customer data.',
-      'Redaction at tool boundaries: before sending tool results to Claude, strip or mask PII. Replace "John Smith, SSN 123-45-6789" with "[CUSTOMER], SSN [REDACTED]". Claude can work with the redacted version.',
-      'The principle of least information: only pass the PII that\'s strictly necessary for the task. If Claude needs to know the customer\'s account status, pass the status — not the full customer record including SSN and address.',
-      'Logging anti-pattern: logging full tool inputs/outputs including PII. Even debug logs should redact sensitive fields. Use structured logging with explicit field-level redaction.',
-      'Claude does NOT need real PII to be helpful. For many tasks, "the customer\'s order" works just as well as "John Smith\'s order ORD-12345." Pass identifiers, not personal details.',
-      'Error messages must not expose PII. "Validation failed for SSN 123-45-6789" should be "Validation failed for SSN [REDACTED]." Audit all error paths for PII exposure.',
-      'Data retention: don\'t store PII in conversation history longer than needed. Implement automatic cleanup or session-based isolation that purges sensitive data when the session ends.',
+      'Structured error context: when a subagent fails, propagate failure type (timeout, 404, rate limit), the attempted query/operation, any partial results obtained, and potential alternative approaches. This enables the coordinator to make intelligent recovery decisions.',
+      'Access failures (timeout, 403) are NOT the same as valid empty results (0 matches). A search that timed out means "we don\'t know if results exist." A search that returned 0 results means "we know no results exist." These require different handling.',
+      'Generic error messages ("search unavailable") hide valuable context from the coordinator. The coordinator needs specifics to decide: retry with backoff? Try an alternative source? Skip and continue? Propagate to human? Generic errors prevent intelligent recovery.',
+      'Silently suppressing errors — returning empty results as if the call succeeded — is a critical anti-pattern. The coordinator treats empty as valid, makes decisions based on incomplete data, and the failure is invisible. Always surface errors.',
+      'Terminating the entire workflow on a single subagent failure is another anti-pattern. One source being unavailable doesn\'t mean all findings are invalid. Design graceful degradation: continue with available sources and annotate coverage gaps.',
+      'Subagent error handling: local recovery for transient errors (retry with backoff for timeouts, rate limits). Propagate only unresolvable errors (auth failures, data not found after all sources checked). This prevents unnecessary workflow interruption.',
+      'Coverage annotations: when some sources succeed and others fail, annotate findings with coverage. "Revenue data from SEC filings (confirmed). Employee count from LinkedIn (unavailable — source timed out)." Future consumers know what\'s reliable.',
+      'Include what was attempted in propagated errors: not just "search failed" but "searched SEC filings for 2024 Q4 revenue, timed out after 30s. Partial result: found Q3 revenue of $4.2M." Partial results are often still useful.',
+      'Error context for retry decisions: include attempt count and history. "First attempt: timeout after 30s. Second attempt: timeout after 60s." This tells the coordinator that simple retry won\'t help — try an alternative source.',
+      'Common exam scenario: "A subagent returns empty results when its search tool times out." Answer: Anti-pattern — access failure is being silently suppressed as empty result. Return structured error instead.',
     ],
     skills: [
-      'Implement PII redaction at tool boundaries',
-      'Apply the principle of least information',
-      'Audit logging and error messages for PII exposure',
-      'Design session-based data isolation',
+      'Design structured error propagation for subagents',
+      'Distinguish access failures from empty results',
+      'Implement graceful degradation with coverage annotations',
+      'Prevent silent error suppression anti-patterns',
     ],
-    codeExample: `// PII Protection Patterns
+    codeExample: `import anthropic
 
-// Pattern 1: Redaction at tool boundaries
-interface PIIRedactor {
-  redact(text: string): string;
-  restore(text: string, original: string): string;
-}
+client = anthropic.Anthropic()
 
-const redactor: PIIRedactor = {
-  redact(text) {
-    return text
-      .replace(/\\b\\d{3}-\\d{2}-\\d{4}\\b/g, "[SSN_REDACTED]")
-      .replace(/\\b[A-Z]\\d{3}\\s?\\d{4}\\s?\\d{4}\\s?\\d{4}\\b/g, "[CC_REDACTED]")
-      .replace(/\\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Z|a-z]{2,}\\b/g, "[EMAIL_REDACTED]")
-      .replace(/\\b\\d{3}[-.]?\\d{3}[-.]?\\d{4}\\b/g, "[PHONE_REDACTED]");
-  },
+# SUBAGENT: Search with structured error reporting
+def search_filings(company: str, source: str):
+    try:
+        # Simulate search call
+        if source == "SEC":
+            return {"status": "success", "data": {"revenue": "5.2M"}, "source": "SEC"}
+        elif source == "LinkedIn":
+            raise TimeoutError("LinkedIn API timed out after 30s")
+    except TimeoutError as e:
+        # STRUCTURED error — NOT empty result
+        return {
+            "status": "error",
+            "error_type": "timeout",
+            "source": source,
+            "attempted": f"Searched {source} for {company} financials",
+            "partial_results": None,
+            "alternatives": ["Try SEC filings instead", "Retry with longer timeout"]
+        }
 
-  // Restore for actual tool execution (Claude sees redacted,
-  // but the tool needs real data)
-  restore(text, original) {
-    // Map redacted tokens back to originals for tool execution
-    // This mapping is stored server-side, never sent to Claude
-    return original;
-  }
-};
+# COORDINATOR: Handles errors intelligently
+sources = ["SEC", "LinkedIn", "Crunchbase"]
+results = []
 
-// Pattern 2: Least information principle
-// ❌ BAD: Passing full customer record
-const badToolInput = {
-  customer: {
-    name: "John Smith",
-    ssn: "123-45-6789",
-    email: "john@example.com",
-    phone: "555-123-4567",
-    address: "123 Main St, Anytown, USA",
-    creditCard: "4111111111111111",
-    orderStatus: "shipped"
-  }
-};
+for source in sources:
+    result = search_filings("Acme Corp", source)
+    if result["status"] == "success":
+        results.append(result)
+        print(f"[ok] {source}: {result['data']}")
+    else:
+        # Error is visible — coordinator can decide
+        print(f"[error] {source}: {result['error_type']}")
+        if result.get("alternatives"):
+            print(f"  Alternatives: {result['alternatives']}")
 
-// ✅ GOOD: Only pass what's needed
-const goodToolInput = {
-  customerRef: "CUST-789",
-  orderStatus: "shipped",
-  // Claude can answer "where is my order" with just this
-  // No PII needed at all
-};
-
-// Pattern 3: Safe logging
-function safeLog(level: string, message: string, data: any) {
-  const sensitive = ['ssn', 'creditCard', 'email', 'phone',
-                     'address', 'dateOfBirth', 'password'];
-
-  const redactedData = Object.entries(data).reduce((acc, [key, value]) => {
-    if (sensitive.includes(key)) {
-      acc[key] = "[REDACTED]";
-    } else {
-      acc[key] = value;
-    }
-    return acc;
-  }, {} as any);
-
-  console.log(JSON.stringify({ level, message, data: redactedData }));
-}
-
-// Usage:
-safeLog("info", "Order lookup", {
-  orderId: "ORD-12345",      // Logged normally
-  customerEmail: "john@...", // Logged as [REDACTED]
-  orderStatus: "shipped"     // Logged normally
-});
-// Output: {"level":"info","message":"Order lookup",
-//          "data":{"orderId":"ORD-12345",
-//                  "customerEmail":"[REDACTED]",
-//                  "orderStatus":"shipped"}}`,
-    antiPatterns: [
-      {
-        pattern: 'Passing full customer records to Claude',
-        problem: 'Claude rarely needs all PII. Pass only the fields needed for the task. "Order status" doesn\'t require SSN or credit card number.',
-      },
-      {
-        pattern: 'Logging unredacted tool inputs/outputs',
-        problem: 'Debug logs containing PII are a security risk. Implement field-level redaction for all logging.',
-      },
-      {
-        pattern: 'Exposing PII in error messages',
-        problem: '"Validation failed for john@example.com" leaks PII. Use "Validation failed for [EMAIL_REDACTED]" instead.',
-      },
-    ],
-    keyConcepts: [
-      { concept: 'PII redaction at boundaries', description: 'Strip/mask PII before sending to Claude. Restore real values only for tool execution, server-side only.' },
-      { concept: 'Least information principle', description: 'Only pass the minimum data Claude needs. Often an ID and status is enough — no personal details.' },
-      { concept: 'Safe logging', description: 'Field-level redaction in all logs. Explicit list of sensitive fields. Never log raw PII.' },
-    ],
-    resources: [
-      { label: 'Claude Data Privacy', url: 'https://www.anthropic.com/privacy' },
-      { label: 'Responsible Use Policy', url: 'https://www.anthropic.com/responsible-use' },
-    ],
-    examTips: [
-      '"Customer data exposed in logs" → implement field-level PII redaction in all logging.',
-      '"Claude receives unnecessary personal data" → apply least information principle. Only pass what\'s needed.',
-      'PII must be protected at every stage: inputs, context, outputs, logs, errors.',
-    ],
+# COORDINATOR makes informed decision
+if not results:
+    print("All sources failed — cannot produce reliable report")
+else:
+    print(f"Proceeding with {len(results)} source(s)")
+    # Annotate coverage gaps in final output
+    failed = [s for s in sources if s not in [r["source"] for r in results]]
+    if failed:
+        print(f"Note: data unavailable from {failed}")`,
   },
   {
     id: '5-4',
-    title: 'Tool Result Processing & Large-Scale Workflows',
+    title: 'Large Codebase Exploration',
     duration: '40 min',
-    description: 'Handle massive tool outputs, process large codebase explorations, and manage subagent coordination for complex analysis tasks. Design crash recovery and quality monitoring for production systems.',
+    description: 'Navigate large codebases with Claude Code using scratchpad files, subagent delegation, state manifests for crash recovery, and context management techniques (/compact). Understand context degradation symptoms and mitigation strategies.',
     knowledge: [
-      'Large tool outputs consume context. A database query returning 10,000 rows will fill the context window and push out earlier conversation. Always paginate, summarize, or filter before passing results to Claude.',
-      'The subagent isolation pattern: spawn subagents for specific investigation tasks. Each subagent works in its own context. Only the structured findings return to the main agent. This prevents context pollution from verbose exploration.',
-      'Scratchpad files for multi-phase analysis: write intermediate findings to a file. Later phases read the scratchpad instead of relying on conversation history. This persists across context resets and enables crash recovery.',
-      'Crash recovery: design agents to export structured state manifests. If an agent crashes mid-task, a new agent can pick up from the last checkpoint by reading the manifest. Without this, all progress is lost.',
-      'Quality monitoring for automated systems: sample a percentage of automated outputs and evaluate against ground truth. If error rates increase, alert the team and revert to human review. Don\'t trust automation blindly.',
-      'Stratified sampling for accuracy measurement: measure accuracy per document type or segment, not just overall. High overall accuracy can mask terrible performance on specific document types (e.g., 95% overall but 60% on invoices).',
-      'Aggregate accuracy masks segment-specific issues. If your extraction system is 95% accurate overall but only 70% accurate on handwritten documents, the overall metric hides a real problem. Always measure per segment.',
-      'Confidence-based routing: route high-confidence extractions to automation, medium-confidence to human review, and low-confidence to investigation. This maximizes throughput while catching errors.',
+      'Context degradation symptoms: after exploring many files, Claude gives inconsistent answers (contradicts earlier findings), references "typical patterns" instead of specific classes found, or loses track of previously identified relationships.',
+      'Scratchpad files persist key findings across context boundaries. Write discovered APIs, class hierarchies, and important patterns to a scratchpad file. Later phases read the scratchpad instead of relying on conversation history that may have been compressed.',
+      'Subagent delegation: spawn subagents for specific investigation tasks ("find all test files", "trace the data flow from API to database"). Each subagent works in its own context. Only structured findings return to the main agent. This prevents context pollution.',
+      'State manifests for crash recovery: design agents to export structured state (files examined, findings so far, next steps). If context overflows or the session crashes, a new agent loads the manifest and continues from the checkpoint.',
+      'Summarize findings before spawning next phase: after exploring 30 files, summarize key discoveries and inject the summary into the next phase\'s context. Fresh subagent gets the essence without the verbose exploration history.',
+      '/compact command reduces context usage during extended sessions. Claude summarizes the conversation so far and continues with a compressed context. Use this proactively before context degradation symptoms appear.',
+      'Phase-based exploration: Phase 1 = map the structure (directory layout, key files). Phase 2 = deep dive on relevant modules. Phase 3 = trace specific flows. Each phase produces a summary that feeds into the next.',
+      'Anti-pattern: reading entire large files into context. Use targeted reads — specific functions, class definitions, import sections. Large files consume context unnecessarily when you often only need specific parts.',
+      'Cross-reference tracking: maintain a list of discovered relationships (A imports B, C calls D, E extends F). This graph structure is more useful than linear file-by-file notes for understanding codebase architecture.',
+      'Common exam scenario: "After exploring 100 files, Claude starts giving vague answers about class names it previously identified specifically." Answer: Context degradation. Use scratchpad files to persist key findings and subagent delegation for new exploration.',
     ],
     skills: [
-      'Paginate and summarize large tool outputs',
-      'Design subagent isolation for codebase exploration',
-      'Implement crash recovery with state manifests',
-      'Design quality monitoring with stratified sampling',
+      'Use scratchpad files to persist findings across context boundaries',
+      'Delegate exploration tasks to subagents with isolated context',
+      'Design state manifests for crash recovery',
+      'Recognize and mitigate context degradation symptoms',
     ],
-    codeExample: `// Tool Result Processing Patterns
+    codeExample: `import anthropic
 
-// Pattern 1: Paginated tool results
-async function searchWithPagination(query: string) {
-  // ❌ BAD: Return all results at once
-  // const all = await db.query(query); // 10,000 rows
-  // Claude's context fills up, earlier conversation is lost
+client = anthropic.Anthropic()
 
-  // ✅ GOOD: Paginate and summarize
-  const firstPage = await db.query(query + " LIMIT 10");
+# PHASE 1: Map codebase structure
+phase1_prompt = """You are exploring a large Python codebase.
+Map the directory structure and identify key modules.
+Write findings to a scratchpad format."""
 
-  if (firstPage.length === 0) {
-    return { total: 0, results: [], summary: "No results found" };
-  }
+phase1 = client.messages.create(
+    model="claude-sonnet-4-20250514",
+    max_tokens=2048,
+    messages=[{"role": "user", "content": phase1_prompt}]
+)
 
-  // Get count for context
-  const count = await db.query("SELECT COUNT(*) FROM ...");
+scratchpad = phase1.content[0].text
 
-  return {
-    total: count,
-    showing: firstPage.length,
-    results: firstPage,
-    summary: \`Found \${count} results. Showing first \${firstPage.length}.\`,
-    hasMore: count > 10
-  };
+# PHASE 2: Deep dive with context from Phase 1
+phase2_prompt = f"""Based on this codebase map, trace the authentication flow.
+Focus on: middleware, decorators, session management.
+
+Previous findings (scratchpad):
+{scratchpad}
+
+Summarize discoveries in the same scratchpad format."""
+
+# This is a SEPARATE context — no context degradation
+phase2 = client.messages.create(
+    model="claude-sonnet-4-20250514",
+    max_tokens=2048,
+    messages=[{"role": "user", "content": phase2_prompt}]
+)
+
+# Update scratchpad with Phase 2 findings
+scratchpad += "\\n\\n## Authentication Flow\\n"
+scratchpad += phase2.content[0].text
+
+print(f"[scratchpad] {len(scratchpad)} chars accumulated")
+
+# State manifest for crash recovery
+manifest = {
+    "phases_completed": ["structure_map", "auth_flow"],
+    "scratchpad_size": len(scratchpad),
+    "next_phase": "trace_api_endpoints",
+    "files_examined": 47,
+    "key_findings": scratchpad.count("##")
 }
+print(f"[manifest] {manifest}")
 
-// Pattern 2: Subagent isolation for exploration
-async function exploreCodebase(topics: string[]) {
-  const findings = {};
-
-  // Each topic investigated in ISOLATION
-  const investigations = await Promise.all(
-    topics.map(topic =>
-      subAgent.execute({
-        task: \`Investigate: \${topic}
-        Return structured findings with:
-        - Key files
-        - Main components
-        - Dependencies
-        - Issues found\`,
-      })
-    )
-  );
-
-  // Only structured summaries come back to main agent
-  for (const result of investigations) {
-    findings[result.topic] = result.summary;
-  }
-
-  return findings;
-}
-
-// Pattern 3: Crash recovery with state manifests
-interface AgentState {
-  version: string;
-  timestamp: string;
-  currentPhase: string;
-  completedPhases: string[];
-  findings: Record<string, any>;
-  nextStep: string;
-}
-
-async function runWithRecovery(task: string) {
-  // Check for existing state
-  let state = await loadState();
-  if (!state) {
-    state = {
-      version: "1.0",
-      timestamp: new Date().toISOString(),
-      currentPhase: "discovery",
-      completedPhases: [],
-      findings: {},
-      nextStep: "start_discovery"
-    };
-  }
-
-  // Execute from checkpoint
-  const phases = ["discovery", "analysis", "review", "report"];
-  const startIndex = phases.indexOf(state.currentPhase);
-
-  for (let i = startIndex; i < phases.length; i++) {
-    const phase = phases[i];
-
-    try {
-      const result = await executePhase(phase, state.findings);
-      state.findings[phase] = result;
-      state.completedPhases.push(phase);
-      state.currentPhase = phases[i + 1] || "complete";
-      state.timestamp = new Date().toISOString();
-
-      // Save checkpoint after each phase
-      await saveState(state);
-    } catch (error) {
-      // Crash! State is saved — next run picks up here
-      console.error(\`Crashed in phase \${phase}. State saved.\`);
-      throw error;
-    }
-  }
-
-  return state.findings;
-}
-
-// Pattern 4: Quality monitoring
-async function monitorExtractionQuality() {
-  // Sample 5% of recent automated extractions
-  const sample = await getRecentExtractions({
-    filter: { automated: true },
-    sampleRate: 0.05
-  });
-
-  // Evaluate against ground truth
-  const evaluation = await evaluateAgainstGroundTruth(sample);
-
-  // Check per-segment accuracy
-  const byType = groupBy(evaluation, "documentType");
-  for (const [type, results] of Object.entries(byType)) {
-    const accuracy = results.filter(r => r.correct).length / results.length;
-    if (accuracy < 0.85) {
-      await alertTeam({
-        type: "segment_accuracy_degradation",
-        segment: type,
-        accuracy,
-        threshold: 0.85
-      });
-    }
-  }
-
-  return { overall: evaluation.accuracy, byType };
-}`,
-    antiPatterns: [
-      {
-        pattern: 'Returning massive tool outputs to Claude',
-        problem: '10K rows fills the context window, pushing out earlier conversation. Always paginate, filter, or summarize before passing to Claude.',
-      },
-      {
-        pattern: 'No crash recovery in long-running agents',
-        problem: 'Without state persistence, a crash at 90% completion means starting over. Save checkpoints after each phase.',
-      },
-      {
-        pattern: 'Measuring only overall accuracy',
-        problem: '95% overall accuracy can hide 60% accuracy on specific document types. Always measure per-segment.',
-      },
-    ],
-    keyConcepts: [
-      { concept: 'Paginated results', description: 'Never return all rows. Use LIMIT, summarize counts, and let Claude request more if needed.' },
-      { concept: 'Subagent isolation', description: 'Each subagent works in its own context. Only structured summaries return to main agent.' },
-      { concept: 'Crash recovery', description: 'Save state manifests after each phase. New agent picks up from checkpoint on restart.' },
-      { concept: 'Stratified quality monitoring', description: 'Measure accuracy per segment, not just overall. Catch segment-specific degradation early.' },
-    ],
-    resources: [
-      { label: 'Agentic Systems Overview', url: 'https://docs.anthropic.com/en/docs/build-with-claude/agentic-systems' },
-    ],
-    examTips: [
-      '"Large tool output fills context" → paginate and summarize. Don\'t pass raw results.',
-      '"Agent crashes lose all progress" → crash recovery with state manifests. Save checkpoints.',
-      '"95% accuracy overall" → might hide segment issues. Always measure per-segment.',
-    ],
+# If session crashes, new agent loads manifest + scratchpad
+# and continues from "trace_api_endpoints" phase`,
   },
   {
     id: '5-5',
-    title: 'Multi-Turn Workflow Design',
+    title: 'Human Review & Confidence Calibration',
     duration: '35 min',
-    description: 'Design multi-turn agent workflows that handle complex tasks across multiple conversation turns. Coordinate subagents, maintain state, and produce reliable results through structured handoffs.',
+    description: 'Design review systems with stratified sampling, field-level confidence scores, and calibrated thresholds. Understand why aggregate accuracy masks segment problems and how to route outputs for human review efficiently.',
     knowledge: [
-      'Multi-turn workflows are needed when a single request requires multiple tool calls, verification steps, or user interactions. A refund workflow might need: (1) verify customer, (2) find order, (3) check return policy, (4) process refund, (5) send confirmation.',
-      'State must be maintained between turns. Either through conversation history (short workflows) or structured state objects (long workflows). Don\'t rely on Claude remembering state from 10+ turns ago.',
-      'Structured handoff packages between phases: instead of free-text handoffs, use a structured format that includes: findings, confidence level, caveats, and recommended next steps. This prevents information loss between phases.',
-      'Subagent coordination for complex tasks: the main agent orchestrates, subagents execute specific tasks. The main agent never needs to see the verbose intermediate work — only the structured summaries.',
-      'Human-in-the-loop patterns: for critical operations (refunds over $500, account deletions), insert a confirmation step. Claude presents what it\'s about to do, the human approves, then Claude executes.',
-      'Error recovery in workflows: if a step fails, don\'t start over. Retry the failed step with error context. If retries fail, skip and continue or escalate based on the step\'s criticality.',
+      'Aggregate accuracy is dangerous: 97% overall may hide 60% accuracy on a specific document type. A system that\'s 99% accurate on invoices but 60% on receipts looks great in aggregate. Always validate by segment.',
+      'Stratified random sampling for error rates: instead of randomly sampling all outputs, sample per segment (document type, field type, complexity level). This reveals segment-specific problems that aggregate metrics miss.',
+      'Field-level confidence scores: instead of one confidence per document, assign confidence per extracted field. "Vendor: 0.95, Total: 0.7, Date: 0.4." Low-confidence fields route to human review while high-confidence fields auto-approve.',
+      'Calibrate confidence with labeled validation sets: run the model on documents with known ground truth. Compare model confidence to actual accuracy. If the model says 0.9 confidence but is only right 70% of the time, the confidence is miscalibrated.',
+      'Different fields need different review thresholds: "vendor name" at 0.8 confidence might be reliable enough. "payment amount" at 0.8 might still need review because the cost of error is higher. Set thresholds per field based on error impact.',
+      'Prioritize limited reviewer capacity: not all outputs deserve equal review attention. Route high-risk fields (amounts, account numbers) to mandatory review. Low-risk fields (categories, sentiment) can auto-approve at lower confidence.',
+      'Detect novel error patterns through ongoing stratified sampling: even after deployment, continue sampling. New document formats, changed layouts, or updated terminology can introduce new failure modes. Ongoing sampling catches these before they compound.',
+      'The review cost tradeoff: 100% human review is accurate but expensive. 0% human review is cheap but risky. Stratified confidence-based routing finds the sweet spot: auto-approve confident extractions, route uncertain ones to humans.',
+      'Validation set design: your labeled dataset must represent all segments proportionally. If 60% of real documents are invoices but only 10% of your validation set is invoices, your calibration will be wrong for the majority of production data.',
+      'Common exam scenario: "Your extraction system has 97% accuracy. The team wants to automate everything." Answer: Validate by document type AND field segment first. 97% overall may mask serious problems on specific types.',
     ],
     skills: [
-      'Design multi-turn workflows with structured state',
-      'Create handoff packages between phases',
-      'Implement human-in-the-loop confirmation',
-      'Design error recovery for multi-step workflows',
+      'Design stratified sampling for accuracy measurement',
+      'Implement field-level confidence scoring',
+      'Calibrate confidence thresholds with validation sets',
+      'Route outputs to human review based on confidence and risk',
     ],
-    codeExample: `// Multi-Turn Workflow Design
+    codeExample: `import anthropic
+import json
 
-// Example: Customer refund workflow
-interface RefundWorkflowState {
-  currentStep: string;
-  customer: { id: string; name: string; verified: boolean } | null;
-  order: { id: string; total: number; items: any[] } | null;
-  returnPolicy: { eligible: boolean; reason: string } | null;
-  refund: { amount: number; processed: boolean } | null;
+client = anthropic.Anthropic()
+
+# EXTRACTION with field-level confidence
+tools = [{
+    "name": "extract_invoice",
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            "vendor": {"type": "string"},
+            "total": {"type": "number"},
+            "date": {"type": "string"},
+            "confidence": {
+                "type": "object",
+                "properties": {
+                    "vendor": {"type": "number"},
+                    "total": {"type": "number"},
+                    "date": {"type": "number"}
+                }
+            }
+        },
+        "required": ["vendor", "total", "date"],
+        "additionalProperties": False
+    }
+}]
+
+# Extract with confidence scores
+response = client.messages.create(
+    model="claude-sonnet-4-20250514",
+    max_tokens=1024,
+    tools=tools,
+    tool_choice={"type": "tool", "name": "extract_invoice"},
+    messages=[{"role": "user", "content": "Invoice from Acme... Total: $1,250"}]
+)
+
+data = next(b.input for b in response.content if b.type == "tool_use")
+conf = data.get("confidence", {})
+
+# CALIBRATED thresholds per field
+THRESHOLDS = {
+    "vendor": 0.7,   # Low risk — moderate threshold
+    "total": 0.9,    # High risk — strict threshold
+    "date": 0.8,     # Medium risk
 }
 
-// Structured handoff package between steps
-interface HandoffPackage {
-  step: string;
-  findings: any;
-  confidence: number;
-  caveats: string[];
-  nextStep: string;
+# ROUTE: auto-approve, human review, or investigate
+for field, threshold in THRESHOLDS.items():
+    score = conf.get(field, 0)
+    if score >= threshold:
+        print(f"  [auto] {field}: {score:.2f} >= {threshold}")
+    else:
+        print(f"  [review] {field}: {score:.2f} < {threshold} → HUMAN REVIEW")
+
+# STRATIFIED SAMPLING: measure per document type
+doc_type_accuracy = {
+    "invoices": 0.99,
+    "receipts": 0.62,   # ← Hidden problem!
+    "contracts": 0.95,
 }
-
-async function executeRefundWorkflow(
-  userMessage: string,
-  state: RefundWorkflowState
-) {
-  switch (state.currentStep) {
-    case "verify_customer": {
-      const customer = await lookupCustomer(userMessage);
-      return {
-        state: { ...state, customer, currentStep: "find_order" },
-        handoff: {
-          step: "verify_customer",
-          findings: customer,
-          confidence: customer ? 0.95 : 0.3,
-          caveats: customer ? [] : ["Customer not found in system"],
-          nextStep: "find_order"
-        }
-      };
-    }
-
-    case "find_order": {
-      const order = await searchOrders(state.customer!.id);
-      return {
-        state: { ...state, order, currentStep: "check_policy" },
-        handoff: {
-          step: "find_order",
-          findings: order,
-          confidence: order ? 0.9 : 0.2,
-          caveats: order ? [] : ["No order found"],
-          nextStep: "check_policy"
-        }
-      };
-    }
-
-    case "check_policy": {
-      const policy = await checkReturnPolicy(state.order!);
-      return {
-        state: { ...state, returnPolicy: policy, currentStep: "confirm_refund" },
-        handoff: {
-          step: "check_policy",
-          findings: policy,
-          confidence: 0.85,
-          caveats: policy.eligible ? [] : [policy.reason],
-          nextStep: policy.eligible ? "confirm_refund" : "deny_refund"
-        }
-      };
-    }
-
-    case "confirm_refund": {
-      // Human-in-the-loop: confirm before executing
-      const refundAmount = state.order!.total;
-      return {
-        state,
-        requiresConfirmation: true,
-        confirmationMessage: \`Process refund of $\${refundAmount} for order $\${state.order!.id}?\`,
-        nextStep: "execute_refund"
-      };
-    }
-
-    case "execute_refund": {
-      const refund = await processRefund(
-        state.order!.id,
-        state.order!.total
-      );
-      return {
-        state: { ...state, refund, currentStep: "complete" },
-        message: \`Refund of $\${state.order!.total} processed successfully.\`
-      };
-    }
-  }
-}`,
-    antiPatterns: [
-      {
-        pattern: 'Free-text handoffs between workflow phases',
-        problem: 'Without structured handoff packages, information gets lost between steps. Use structured format: findings + confidence + caveats + next step.',
-      },
-      {
-        pattern: 'No human confirmation for critical operations',
-        problem: 'Processing a $5,000 refund without confirmation is risky. Insert human-in-the-loop for operations above a threshold.',
-      },
-    ],
-    keyConcepts: [
-      { concept: 'Structured handoff packages', description: 'Findings + confidence + caveats + next step. Prevents information loss between workflow phases.' },
-      { concept: 'Human-in-the-loop', description: 'Confirmation step before critical operations. Present action, human approves, then execute.' },
-      { concept: 'State-driven workflow', description: 'Explicit state object tracks progress. Each step reads and updates state. No reliance on memory.' },
-    ],
-    examTips: [
-      '"Information lost between workflow steps" → structured handoff packages with findings, confidence, caveats.',
-      '"Need to prevent accidental large refunds" → human-in-the-loop confirmation for operations above threshold.',
-    ],
+overall = sum(doc_type_accuracy.values()) / len(doc_type_accuracy)
+print(f"\\nOverall: {overall:.0%} (hides 62% receipt accuracy!)")
+print(f"Receipts: {doc_type_accuracy['receipts']:.0%} ← Needs attention")`,
   },
   {
     id: '5-6',
     title: 'Information Provenance & Uncertainty',
-    duration: '35 min',
-    description: 'Preserve source attribution through multi-source synthesis and handle conflicting information correctly. Never merge conflicting statistics — annotate with attribution instead.',
+    duration: '30 min',
+    description: 'Preserve source attribution through synthesis, handle conflicting sources, and represent uncertainty in reports. Understand why claim-source mappings are critical and how summarization destroys provenance.',
     knowledge: [
-      'Source attribution is lost during summarization. When Claude summarizes findings from multiple sources, the link between a specific claim and its source disappears. Use structured claim-source mappings to preserve this.',
-      'Claim-source mapping structure: each claim includes its source document, URL, date, and confidence level. { claim: "market will reach $407B", sources: [{ document: "McKinsey Report", date: "2024-01" }], confidence: 0.8 }.',
-      'Conflicting statistics from different sources: DON\'T pick one. DON\'T average them. Instead, present both with attribution: "Source A reports $407B by 2027. Source B reports $390B by 2027. These estimates differ due to methodology."',
-      'Require publication/collection dates in outputs. A statistic from 2020 shouldn\'t be presented as current. Every data point should include when it was collected or published.',
-      'Structure reports to distinguish well-established findings from contested ones. "Established: X is true (3 sources agree). Contested: Y might be true (1 source claims it, 2 disagree)." This is more honest than presenting everything as fact.',
-      'The synthesis anti-pattern: merging multiple reports into a single narrative that loses all attribution. "The market is growing rapidly" hides which source said what, their methodology, and their date. Instead, maintain structured claim-source mappings.',
+      'Source attribution is lost during summarization unless you explicitly maintain claim-source mappings. A fact like "revenue grew 12%" needs to carry its source (which document, which page, which date) through every synthesis step.',
+      'Structured claim-source mappings: for each claim, store the source URL/document name, relevant excerpt, publication date, and confidence. This lets downstream consumers verify claims and understand data lineage.',
+      'Conflicting sources: when two credible sources report different values, annotate the conflict with source attribution. Include both values with their sources. Do NOT arbitrarily pick one or average them.',
+      'Temporal data: require publication/collection dates in all structured outputs. Different reporting periods often explain apparent contradictions — a Q4 2024 report vs an annual 2023 filing may both be correct for their respective periods.',
+      'Distinguish well-established findings from contested ones. Render contested claims in a separate section with source annotations. Readers need to know which findings are solid and which are disputed.',
+      'Render by content type: financial data renders best as tables, news as prose, technical specs as structured lists. Match the presentation format to the data type for maximum clarity.',
+      'Subagents must preserve claim-source mappings through synthesis. The coordinator should never receive a bare fact without its source. If a subagent summarizes, it must carry forward the source annotations.',
+      'Let the coordinator reconcile conflicts — do NOT resolve at the subagent level. A subagent reporting two conflicting revenue figures should pass both up, not pick one. The coordinator has full context to decide.',
+      'Anti-pattern: averaging conflicting statistics. "Source A says 5.2M, Source B says 4.8M, so I will report 5.0M." This hides the conflict and produces a fabricated number. Instead: report both with attribution.',
+      'Common exam scenario: "After summarizing three analyst reports, your synthesis agent reports revenue as $5.0M but none of the sources say exactly $5.0M." Answer: Lost provenance through averaging. Use claim-source mappings.',
     ],
     skills: [
-      'Require structured claim-source mappings in outputs',
-      'Present conflicting values with explicit annotation',
-      'Include dates for all data points',
-      'Distinguish established from contested findings',
+      'Design claim-source mapping structures for multi-source synthesis',
+      'Handle conflicting sources with annotation instead of averaging',
+      'Require temporal metadata in all structured outputs',
+      'Render contested vs established findings separately',
     ],
-    codeExample: `// Information Provenance Patterns
+    codeExample: `import anthropic
 
-// Pattern 1: Claim-Source Mapping
-interface ClaimSourceMapping {
-  claim: string;
-  sources: {
-    document: string;
-    url?: string;
-    date: string;
-    methodology?: string;
-  }[];
-  confidence: number;
-  status: "established" | "contested" | "single_source";
-}
+client = anthropic.Anthropic()
 
-// ✅ GOOD: Structured with attribution
-const findings: ClaimSourceMapping[] = [
-  {
-    claim: "AI market will reach $407B by 2027",
-    sources: [
-      {
-        document: "McKinsey Global AI Report 2024",
-        url: "https://mckinsey.com/ai-report",
-        date: "2024-01-15",
-        methodology: "Bottom-up market sizing"
-      }
-    ],
-    confidence: 0.8,
-    status: "single_source"
+# EXTRACTION with source attribution
+tools = [{
+    "name": "extract_financial_data",
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            "claims": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "metric": {"type": "string"},
+                        "value": {"type": "string"},
+                        "source": {"type": "string"},
+                        "date": {"type": "string"},
+                        "excerpt": {"type": "string"}
+                    }
+                }
+            }
+        },
+        "required": ["claims"],
+        "additionalProperties": False
+    }
+}]
+
+# Extract from multiple sources with provenance
+sources = [
+    ("SEC Filing Q4 2024", "Revenue for Q4 was $5.2M, up 12% YoY"),
+    ("Annual Report 2024", "Full year revenue reached $18.4M"),
+    ("Analyst Note Jan 2025", "We estimate Q4 revenue at $4.8M based on channel checks"),
+]
+
+all_claims = []
+for source_name, text in sources:
+    response = client.messages.create(
+        model="claude-sonnet-4-20250514",
+        max_tokens=1024,
+        tools=tools,
+        tool_choice={"type": "tool", "name": "extract_financial_data"},
+        messages=[{"role": "user", "content": f"Source: {source_name}\\n\\n{text}"}]
+    )
+    data = next(b.input for b in response.content if b.type == "tool_use")
+    for claim in data["claims"]:
+        claim["source"] = source_name  # Attach provenance
+        all_claims.append(claim)
+
+# Detect conflicts (same metric, different values)
+print("=== Claims with Provenance ===")
+for c in all_claims:
+    print(f"  {c['metric']}: {c['value']} (from {c['source']})")
+
+# NEVER average conflicting values
+# Instead: annotate the conflict and let coordinator decide`,
   },
   {
-    claim: "AI adoption doubled in 2024",
-    sources: [
-      {
-        document: "Gartner AI Survey 2024",
-        date: "2024-03-01"
-      },
-      {
-        document: "McKinsey Global AI Report 2024",
-        date: "2024-01-15"
-      }
-    ],
-    confidence: 0.9,
-    status: "established"
-  }
-];
-
-// Pattern 2: Handling conflicting data
-// ❌ BAD: Pick one or average
-// "The market size is $398B" (averaged $407B and $390B)
-// This invents a number neither source reported!
-
-// ✅ GOOD: Present both with attribution
-const conflictingFindings = {
-  claim: "AI market size by 2027",
-  values: [
-    {
-      value: "$407B",
-      source: "McKinsey Global AI Report 2024",
-      date: "2024-01-15",
-      methodology: "Bottom-up market sizing"
-    },
-    {
-      value: "$390B",
-      source: "Grand View Research 2024",
-      date: "2024-02-20",
-      methodology: "Top-down economic modeling"
-    }
-  ],
-  conflict_reason: "Different methodologies produce different estimates",
-  recommendation: "Cite both sources when referencing market size"
-};
-
-// Pattern 3: Structured report with provenance
-const report = {
-  established_findings: [
-    {
-      claim: "AI adoption is increasing",
-      sources: 3,
-      date_range: "2023-2024",
-      confidence: 0.95
-    }
-  ],
-  contested_findings: [
-    {
-      claim: "AI market will reach $400B+ by 2027",
-      supporting: 2,
-      contradicting: 1,
-      reason: "Methodology differences in market sizing"
-    }
-  ],
-  single_source_findings: [
-    {
-      claim: "45% of companies use generative AI",
-      source: "McKinsey 2024",
-      note: "Not independently verified"
-    }
-  ]
-};`,
-    antiPatterns: [
-      {
-        pattern: 'Averaging conflicting statistics',
-        problem: 'If Source A says $407B and Source B says $390B, averaging to $398.5B invents a number neither source reported. Present both with attribution.',
-      },
-      {
-        pattern: 'Summarizing without source attribution',
-        problem: '"The market is growing" loses all attribution. Which source? When? Based on what methodology? Maintain claim-source mappings.',
-      },
-      {
-        pattern: 'Presenting contested findings as established fact',
-        problem: 'If only 1 out of 3 sources makes a claim, it\'s not established. Structure reports to distinguish established from contested from single-source.',
-      },
-    ],
-    keyConcepts: [
-      { concept: 'Claim-source mapping', description: 'Each claim links to its source with document name, date, methodology. Preserves attribution through synthesis.' },
-      { concept: 'Conflicting data handling', description: 'Present both values with attribution. Don\'t average, don\'t pick one. Explain why they differ.' },
-      { concept: 'Established vs contested', description: 'Structure reports to distinguish: established (multiple sources agree) vs contested (sources disagree) vs single_source.' },
-    ],
-    examTips: [
-      '"Two reports disagree on a statistic" → present both with attribution, don\'t average.',
-      '"Source attribution lost in synthesis" → use structured claim-source mappings.',
-      '"Single source claim presented as fact" → label as single_source, not established.',
-    ],
-  },
-  {
-    id: '5-exam',
+    id: '5-quiz',
     title: 'Domain 5 Exam Practice Quiz',
     duration: '15 min',
     description: 'Interactive quiz covering all 6 subdomains of context management and safety.',

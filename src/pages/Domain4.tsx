@@ -249,517 +249,291 @@ Now extract from: "\${inputText}"
   },
   {
     id: '4-3',
-    title: 'Extended Thinking',
+    title: 'Structured Output (tool_use + JSON Schema)',
     duration: '40 min',
-    description: 'Extended thinking gives Claude a private scratchpad for complex reasoning. Understand when to enable it (multi-step logic, math, complex analysis), when NOT to (simple tasks, time-sensitive), and the tradeoffs (higher cost, higher latency, higher accuracy).',
+    description: 'Use tool_use with JSON schemas to enforce guaranteed structured output. Understand tool_choice modes (auto, any, forced), strict mode with additionalProperties: false, and the difference between syntax errors (eliminated by tool_use) and semantic errors (still possible).',
     knowledge: [
-      'Extended thinking gives Claude a private "scratchpad" where it works through problems step-by-step before producing the final answer. Think of it like a human working on scratch paper before showing their work.',
-      'When to use extended thinking: multi-step mathematical reasoning, complex code analysis with many interdependencies, legal or compliance analysis requiring careful reasoning, tasks where getting the wrong answer is very costly.',
-      'When NOT to use extended thinking: simple classification tasks, straightforward extraction, any task where the answer is obvious. Extended thinking adds latency and cost for tasks that Claude can handle well without it.',
-      'The tradeoff triangle: Extended thinking increases accuracy AND cost AND latency. You gain reasoning depth at the expense of speed and token usage. Only enable when the accuracy gain justifies the cost.',
-      'Extended thinking budget: you can set a thinking budget (token limit) to control how long Claude thinks. Higher budgets allow deeper reasoning but increase latency and cost. Find the right balance for your task complexity.',
-      'The thinking is private: Claude\'s extended thinking content is NOT visible to tools or downstream systems. Only the final answer (after thinking) is returned. This means the thinking won\'t pollute tool inputs or structured outputs.',
-      'Model support: extended thinking is available on Claude Sonnet 4 and Claude Opus 4. It is not available on all model variants. Check the docs for current support.',
-      'The exam tests the "when to use" decision: if a question asks "should extended thinking be used for X?", evaluate based on task complexity. Simple tasks = no. Multi-step reasoning = yes.',
+      'tool_use with JSON schemas is the most reliable approach for guaranteed schema-compliant structured output. Instead of prompting "respond in JSON," define a tool with the exact JSON schema. Claude fills in the tool parameters = your structured output.',
+      'Why tool_use > prompt-based JSON: prompting "respond in JSON" has ~90% valid JSON rate. Claude may forget fields, use wrong types, or wrap in markdown. Tool_use with strict mode has ~100% valid JSON rate because the schema is enforced mechanically.',
+      'tool_choice modes: "auto" = model decides whether to use a tool or respond as text (good for flexible agents). "any" = model MUST use a tool but picks which one. {"type": "tool", "name": "extract_x"} = forces a specific tool (guaranteed structured output).',
+      'For guaranteed structured extraction, use tool_choice: {"type": "tool", "name": "your_tool"} — this forces Claude to call that specific tool with schema-compliant parameters. No text responses possible.',
+      'Strict mode: set additionalProperties: false in your JSON schema. This enables strict mode where Claude MUST provide exactly the fields you specified, no extra fields allowed. Combined with forced tool_choice, this gives the strongest output guarantee.',
+      'Syntax errors (malformed JSON, missing brackets) are ELIMINATED by tool_use. The schema enforcement prevents these entirely. This is the key advantage over prompt-based approaches.',
+      'Semantic errors (wrong values, hallucinated data) are NOT eliminated by tool_use. The JSON will be valid but the content may be wrong. A schema ensures structure, not truth. You still need validation logic for content accuracy.',
+      'Schema design best practices: use "enum" for fixed-value fields (sentiment: ["positive", "negative", "neutral"]), "description" on each property for clarity, required array for mandatory fields, and nested objects for complex structures.',
+      'Common exam trap: "I need structured output so I\'ll prompt Claude to respond in JSON." Wrong — use tool_use. "I need guaranteed valid JSON." Use tool_use with strict mode. "I need guaranteed correct content." Schema can\'t help — that needs validation + retry.',
+      'The extraction pattern: (1) Define tool with JSON schema matching your desired output. (2) Send messages with tool available. (3) Force tool_choice to that tool. (4) Parse tool_use block content as your structured data. ~100% schema compliance.',
     ],
-    skills: [
-      'Evaluate when extended thinking improves accuracy',
-      'Set appropriate thinking budgets for task complexity',
-      'Understand the cost/latency/accuracy tradeoff',
-      'Know which models support extended thinking',
-    ],
-    codeExample: `// Extended Thinking Configuration
+    codeExample: `import anthropic
 
-// Basic extended thinking enablement
-const response = await anthropic.messages.create({
-  model: "claude-sonnet-4-20250514",
-  max_tokens: 16000,
-  thinking: {
-    type: "enabled",
-    budget_tokens: 10000  // How long Claude can think
-  },
-  messages: [{
-    role: "user",
-    content: "Analyze this financial model and identify any logical errors in the assumptions."
-  }]
-});
+client = anthropic.Anthropic()
 
-// Response structure with extended thinking
-// {
-//   content: [
-//     { type: "thinking", thinking: "Let me work through this..." },
-//     { type: "text", text: "The final answer after reasoning..." }
-//   ]
-// }
+# Step 1: Define your tool with JSON schema
+tools = [{
+    "name": "extract_customer_info",
+    "description": "Extract structured customer information",
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            "name": {"type": "string", "description": "Customer full name"},
+            "sentiment": {
+                "type": "string",
+                "enum": ["positive", "negative", "neutral"],
+                "description": "Overall sentiment"
+            },
+            "issues": {
+                "type": "array",
+                "items": {"type": "string"},
+                "description": "List of mentioned issues"
+            }
+        },
+        "required": ["name", "sentiment"],
+        # Strict mode: no extra fields allowed
+        "additionalProperties": False
+    }
+}]
 
-// WHEN TO USE — Good candidates for extended thinking
+# Step 2: Call with forced tool choice
+response = client.messages.create(
+    model="claude-sonnet-4-20250514",
+    max_tokens=1024,
+    tools=tools,
+    tool_choice={"type": "tool", "name": "extract_customer_info"},
+    messages=[{
+        "role": "user",
+        "content": "I'm Maria Silva. Your app crashed again! I lost my work!"
+    }]
+)
 
-// 1. Complex multi-step math
-// "Calculate the compound interest on $10,000 at 3.5% APR
-//  compounded monthly for 15 years, then adjust for 2.1% annual inflation."
-// → Multiple calculation steps, easy to make arithmetic errors
-
-// 2. Complex code analysis
-// "This function has a race condition. Identify all possible
-//  interleavings of the concurrent operations and which ones cause bugs."
-// → Requires systematic reasoning about many possible execution paths
-
-// 3. Legal/compliance analysis
-// "Compare this contract clause against GDPR Article 6(1) lawful bases
-//  and identify potential compliance gaps."
-// → Requires careful reading and comparison against legal standards
-
-// WHEN NOT TO USE — Bad candidates for extended thinking
-
-// 1. Simple classification
-// "Is this email spam or not spam?" → No multi-step reasoning needed
-
-// 2. Straightforward extraction
-// "Extract the company name and date from this text" → Direct task
-
-// 3. Simple formatting
-// "Convert this JSON to a markdown table" → Mechanical transformation
-
-// Setting the budget based on task complexity
-
-// Light reasoning (simple multi-step)
-thinking: { type: "enabled", budget_tokens: 5000 }
-
-// Moderate reasoning (analysis with several factors)
-thinking: { type: "enabled", budget_tokens: 10000 }
-
-// Deep reasoning (complex math, legal analysis, many variables)
-thinking: { type: "enabled", budget_tokens: 20000 }
-
-// Tradeoff summary:
-// More budget → More accurate + More expensive + Slower response
-// Less budget → Less accurate + Cheaper + Faster response`,
-    antiPatterns: [
-      {
-        pattern: 'Using extended thinking for simple tasks',
-        problem: 'Adding 5-10 seconds of latency and 10K+ tokens for a classification task that Claude handles in milliseconds without thinking.',
-      },
-      {
-        pattern: 'No budget limit',
-        problem: 'Without budget_tokens, extended thinking can consume massive tokens for tasks that don\'t need it. Always set a budget.',
-      },
-    ],
-    keyConcepts: [
-      { concept: 'Private scratchpad', description: 'Claude reasons in a private thinking space. The reasoning is NOT visible to tools or downstream systems.' },
-      { concept: 'Cost/latency/accuracy triangle', description: 'Extended thinking increases all three: more accurate, more expensive, slower response.' },
-      { concept: 'Thinking budget', description: 'budget_tokens controls how long Claude thinks. Match budget to task complexity.' },
-    ],
-    resources: [
-      { label: 'Extended Thinking (Official Docs)', url: 'https://docs.anthropic.com/en/docs/build-with-claude/extended-thinking' },
-    ],
-    examTips: [
-      '"Should extended thinking be used?" → Evaluate task complexity. Multi-step reasoning = yes. Simple classification = no.',
-      'The tradeoff: extended thinking improves accuracy but increases cost and latency.',
-      'Budget tokens control thinking depth. Always set a budget appropriate to task complexity.',
-    ],
+# Step 3: Extract structured data from tool_use block
+for block in response.content:
+    if block.type == "tool_use":
+        data = block.input  # Guaranteed valid JSON!
+        print(f"Customer: {data['name']}")
+        print(f"Sentiment: {data['sentiment']}")  # enum: positive/negative/neutral
+        print(f"Issues: {data.get('issues', [])}")`,
   },
   {
     id: '4-4',
-    title: 'Structured Output with JSON Schemas',
+    title: 'Validation, Retry & Feedback Loops',
     duration: '40 min',
-    description: 'Enforce reliable structured output using tool use with JSON schemas. Tool use is the recommended approach for structured extraction — more reliable than prompt-based formatting. Combine with validation and retry loops for production systems.',
+    description: 'Build production-grade extraction pipelines with validation, retry-with-error-feedback loops, and self-correction fields. Understand when retries help (info exists but format wrong) vs when they don\'t (info not in input).',
     knowledge: [
-      'Structured output means getting Claude to return data in a predictable format (like JSON) instead of free-text. This is essential for any system that needs to parse Claude\'s output programmatically.',
-      'Tool use is the recommended approach for structured output. Instead of asking Claude to "respond in JSON," define a tool with the exact JSON schema you want. Claude fills in the tool parameters = your structured output.',
-      'Why tool use > prompt-based JSON: when you say "respond in JSON," Claude might forget a field, use wrong types, or add markdown formatting around the JSON. Tool use enforces the schema — Claude MUST provide all required fields in the correct types.',
-      'JSON schema defines the structure: required fields, field types, enums, descriptions. Example: { type: "object", properties: { sentiment: { type: "string", enum: ["positive", "negative", "neutral"] } }, required: ["sentiment"] }.',
-      'The tool result trick: instead of actually executing the tool, you just parse the tool_use response as your structured output. Claude thinks it\'s calling a tool, but you\'re using the tool call as your data format.',
-      'Validation + retry loop: even with schemas, Claude might return logically invalid data (e.g., a date in the future when you need past dates). Add a validation step that checks the output and retries with specific error feedback.',
-      'Retries are effective for format/consistency errors but NOT when the information is simply absent from the input. If the document doesn\'t mention a founding date, retrying won\'t create one — Claude will hallucinate.',
-      'Self-correction pattern: include a "confidence" field in the schema. Claude can rate its own confidence, and low-confidence fields can be flagged for human review. Don\'t trust self-reported confidence blindly, but it\'s a useful signal.',
+      'Validation feedback loops: when Claude\'s output doesn\'t match expectations, feed the specific error back into the next attempt. "Your previous extraction had these errors: [specific errors]. Fix them." Claude corrects specific issues much better than generic retry.',
+      'Retries are effective when the information IS in the input but the FORMAT was wrong (wrong type, missing field, hallucinated value). Retries are INEFFECTIVE when the information is simply NOT in the input. Distinguish these cases before retrying.',
+      'The retry-with-error-feedback pattern: (1) Make initial call. (2) Validate output against schema + business rules. (3) If invalid, include the specific error in the next message. (4) Claude sees "you got X wrong, fix it" and corrects. Much more effective than blind retry.',
+      'Self-correction fields: add a "correction_notes" or "confidence_per_field" to your schema. Claude fills in confidence scores for each extracted field. Low-confidence fields = flag for human review or additional validation.',
+      'Schema validation catches syntax errors (missing fields, wrong types). Business rule validation catches semantic errors (negative age, future dates, impossible values). Both layers are needed for production systems.',
+      'Maximum retry limits: set a hard limit (typically 2-3 retries). After max retries, either accept the best attempt or escalate to human. Infinite retry loops are an anti-pattern — they waste tokens without convergence guarantees.',
+      'The validation chain: schema validation (JSON valid?) → type validation (string is string?) → range validation (age > 0?) → business logic validation (start_date < end_date?) → cross-field validation (consistent values across fields).',
+      'Error messages for retries should be specific: NOT "try again" but "field \'amount\' was missing. Look for currency values in the input and extract them." Specific feedback = specific correction.',
+      'Self-correction design: include an explicit "review your extraction" step in the prompt. "Extract the data, then review each field for accuracy before returning." This catches obvious errors before they reach validation.',
+      'Common exam trap: "Retries always improve accuracy." Wrong — retries only help when the information exists in the input. If Claude genuinely can\'t find the info, retrying won\'t help. Add "not found" as a valid option in your schema.',
     ],
-    skills: [
-      'Define JSON schemas for structured extraction',
-      'Use tool use as the extraction mechanism',
-      'Implement validation + retry loops with error feedback',
-      'Distinguish effective retries (format errors) from ineffective (missing info)',
-    ],
-    codeExample: `// Structured Output via Tool Use
+    codeExample: `import anthropic
+import json
 
-// Step 1: Define the schema as a tool
-const extractionTool = {
-  name: "extract_company_info",
-  description: "Extract structured company information from text",
-  input_schema: {
-    type: "object",
-    properties: {
-      company_name: {
-        type: "string",
-        description: "The official company name"
-      },
-      founded_year: {
-        type: "number",
-        description: "Year the company was founded. null if not mentioned."
-      },
-      headquarters: {
-        type: "string",
-        description: "City and country of headquarters. null if not mentioned."
-      },
-      industry: {
-        type: "string",
-        enum: ["technology", "healthcare", "finance", "retail", "manufacturing", "other"],
-        description: "Primary industry sector"
-      },
-      employee_count: {
-        type: "number",
-        description: "Approximate number of employees. null if not mentioned."
-      },
-      confidence: {
-        type: "number",
-        description: "Overall confidence in extraction (0.0 to 1.0)"
-      }
-    },
-    required: ["company_name", "industry", "confidence"]
-  }
-};
+client = anthropic.Anthropic()
 
-// Step 2: Call Claude with the tool
-const response = await anthropic.messages.create({
-  model: "claude-sonnet-4-20250514",
-  tools: [extractionTool],
-  tool_choice: { type: "tool", name: "extract_company_info" },
-  // Force this specific tool = guaranteed structured output
-  messages: [{
-    role: "user",
-    content: "Acme Technologies was started in 2015 by former Google engineers in Austin, TX. They have about 200 employees."
-  }]
-});
-
-// Step 3: Parse the tool call as your structured data
-const toolCall = response.content.find(block => block.type === "tool_use");
-const extractedData = toolCall.input;
-// {
-//   company_name: "Acme Technologies",
-//   founded_year: 2015,
-//   headquarters: "Austin, TX",
-//   industry: "technology",
-//   employee_count: 200,
-//   confidence: 0.95
-// }
-
-// Step 4: Validation + Retry Loop
-async function extractWithRetry(text, maxAttempts = 3) {
-  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-    const response = await callClaude(text);
-    const data = parseToolCall(response);
-
-    // Validate
-    const errors = validate(data);
-    if (errors.length === 0) return data;
-
-    // Retry with specific error feedback
-    if (attempt < maxAttempts) {
-      text += \`\\n\\nPrevious extraction attempt had errors:
-\${errors.join("\\n")}
-Please fix these specific issues.\`;
+tools = [{
+    "name": "extract_invoice",
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            "vendor": {"type": "string"},
+            "total": {"type": "number"},
+            "date": {"type": "string"},
+            "confidence": {
+                "type": "object",
+                "properties": {
+                    "vendor": {"type": "number"},
+                    "total": {"type": "number"},
+                    "date": {"type": "number"}
+                }
+            }
+        },
+        "required": ["vendor", "total", "date"],
+        "additionalProperties": False
     }
-  }
-  throw new Error("Max retries exceeded");
-}
+}]
 
-function validate(data) {
-  const errors = [];
-  if (data.founded_year && data.founded_year > new Date().getFullYear()) {
-    errors.push("founded_year cannot be in the future");
-  }
-  if (data.employee_count && data.employee_count < 0) {
-    errors.push("employee_count cannot be negative");
-  }
-  if (!data.company_name || data.company_name.length < 2) {
-    errors.push("company_name is too short or missing");
-  }
-  return errors;
-}
+def extract_with_retry(document: str, max_retries: int = 3):
+    messages = [{"role": "user", "content": document}]
+    
+    for attempt in range(max_retries):
+        response = client.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=1024,
+            tools=tools,
+            tool_choice={"type": "tool", "name": "extract_invoice"},
+            messages=messages
+        )
+        
+        data = next(b.input for b in response.content if b.type == "tool_use")
+        errors = validate(data)
+        
+        if not errors:
+            print(f"[attempt {attempt+1}] Extraction valid!")
+            return data
+        
+        # Feed specific errors back for retry
+        print(f"[attempt {attempt+1}] Errors: {errors}")
+        error_msg = f"Your extraction had these errors:\\n"
+        for err in errors:
+            error_msg += f"  - {err}\\n"
+        error_msg += "\\nPlease fix these specific issues."
+        
+        messages.append({"role": "assistant", "content": json.dumps(data)})
+        messages.append({"role": "user", "content": error_msg})
+    
+    print("[max retries] Returning best attempt")
+    return data
 
-// IMPORTANT: Retries are effective for FORMAT errors
-// Retries are INEFFECTIVE when info is simply absent
-// If the text doesn't mention headquarters, retrying won't help
-// — Claude will either return null (good) or hallucinate (bad)`,
-    antiPatterns: [
-      {
-        pattern: 'Prompt-based JSON ("respond in JSON")',
-        problem: 'Claude might forget fields, use wrong types, add markdown. Tool use with JSON schema enforces structure reliably.',
-      },
-      {
-        pattern: 'Retrying when information is absent',
-        problem: 'If the document doesn\'t contain a founding date, retrying won\'t create one. Retries fix format errors, not missing information.',
-      },
-      {
-        pattern: 'Blind trust in self-reported confidence',
-        problem: 'Claude\'s confidence scores are poorly calibrated. Use them as a signal, not ground truth. Flag low-confidence fields for human review.',
-      },
-    ],
-    keyConcepts: [
-      { concept: 'Tool use for extraction', description: 'Define the desired output as a tool schema. Force tool_choice to that tool. Parse tool call as structured data.' },
-      { concept: 'JSON schema enforcement', description: 'Required fields, type constraints, enums. Claude MUST comply with the schema when using tool use.' },
-      { concept: 'Validation + retry', description: 'Check extracted data for logical validity. Retry with specific error feedback for format errors. Don\'t retry for missing info.' },
-    ],
-    resources: [
-      { label: 'Structured Output (Official Docs)', url: 'https://docs.anthropic.com/en/docs/build-with-claude/structured-output' },
-    ],
-    examTips: [
-      '"Need reliable JSON output" → answer: use tool use with JSON schema, not prompt-based formatting.',
-      '"Retry fails to find missing info" → retries fix format, not absence. Know when retries are effective vs ineffective.',
-      'tool_choice: { type: "tool", name: "..." } forces structured output. This is the exam-tested pattern.',
-    ],
+def validate(data):
+    errors = []
+    if data.get("total", 0) < 0:
+        errors.append("total cannot be negative")
+    if data.get("vendor") == "":
+        errors.append("vendor name is empty — look for company name")
+    return errors`,
   },
   {
     id: '4-5',
-    title: 'Metaprompt for Prompt Optimization',
+    title: 'Batch Processing Strategies',
     duration: '30 min',
-    description: 'Use the metaprompt technique to let Claude optimize your prompts. Feed Claude a prompt and its output, ask Claude to analyze what went wrong, and generate an improved version. This is a prompt engineering best practice for iterative improvement.',
+    description: 'Use the Message Batches API for cost-effective bulk processing. Understand 50% cost savings, custom_id for tracking, and when to use batch vs real-time processing. Design batch pipelines for large-scale extraction tasks.',
     knowledge: [
-      'The metaprompt pattern: (1) Give Claude your current prompt, (2) Show Claude the output it produced, (3) Ask Claude to analyze what went wrong, (4) Ask Claude to write an improved prompt. Claude is surprisingly good at debugging its own instructions.',
-      'Why metaprompting works: Claude can analyze its own failure modes from an outside perspective. When you show it "you produced X but the expected output was Y," Claude can identify the specific instruction that led to the error and suggest a fix.',
-      'Iterative metaprompting: run the improved prompt, check the output, metaprompt again. Each iteration refines the prompt. 2-3 iterations typically produce a high-quality prompt that handles edge cases well.',
-      'The prompt feedback format: "Current prompt: [your prompt]. Output produced: [actual output]. Expected output: [desired output]. Analyze the gap and suggest prompt improvements." This structured format helps Claude give targeted feedback.',
-      'Metaprompting for consistency: if a prompt produces inconsistent results across runs, use metaprompting to add specificity. Claude will identify which parts of the prompt are ambiguous and suggest concrete replacements.',
-      'Production use: the Anthropic recommendation is to use metaprompting during development to craft high-quality prompts, then deploy the optimized prompts in production. Don\'t metaprompt in production (it\'s expensive and slow).',
+      'The Message Batches API: submit up to 10,000 requests in a single batch. Claude processes them asynchronously. Results available within 24 hours (usually much faster). Cost: 50% less than standard API calls.',
+      'When to use batch: large-scale extraction (thousands of documents), bulk classification, mass summarization, data enrichment pipelines. When NOT to use batch: real-time user-facing requests, interactive chat, time-sensitive operations.',
+      'Each request in a batch has a custom_id — your unique identifier for tracking. When results come back, match them by custom_id. This is essential because batch results may return in different order than submitted.',
+      'Batch lifecycle: (1) Create batch with array of requests. (2) Poll for completion or use webhooks. (3) Retrieve results. (4) Match results to original requests via custom_id. (5) Handle errors per-request (some succeed, some fail independently).',
+      'Error handling in batches: each request is independent. Request #1 succeeding doesn\'t mean request #2 will. Check the result status for each custom_id individually. Failed requests can be resubmitted in a new batch.',
+      'Batch processing patterns for consistency: include shared context in each request\'s system prompt. Without this, Claude treats each request independently and may give inconsistent results across the batch.',
+      'Cost comparison: Standard API = $X per token. Batch API = $0.5X per token (50% savings). At scale (10,000+ documents), this is significant. Tradeoff: latency (hours vs seconds).',
+      'Rate limits: batches have separate rate limits from standard API. You can submit batches while also making real-time calls. They don\'t compete for the same rate limit quota.',
+      'Common exam scenario: "You need to process 5,000 customer feedback forms for sentiment analysis. Budget is limited. Time is not critical." Answer: Use Message Batches API for 50% cost savings.',
+      'Anti-pattern: using batch for real-time requests to save money. The 24-hour processing window makes this unusable for interactive applications. Use batch only for asynchronous, bulk workloads.',
     ],
-    skills: [
-      'Apply the metaprompt pattern to debug prompts',
-      'Structure metaprompt requests with current prompt + output + expected output',
-      'Iterate 2-3 times for optimal results',
-      'Use metaprompting during development, deploy optimized prompts in production',
-    ],
-    codeExample: `// Metaprompt Pattern — Let Claude Optimize Your Prompts
+    codeExample: `import anthropic
 
-// Step 1: Start with a draft prompt
-const draftPrompt = \`
-Review this code and find bugs.
-\`;
+client = anthropic.Anthropic()
 
-// Step 2: Run it and check the output
-const output = await callClaude(draftPrompt, codeSample);
-// Output: "I found 8 issues: [lists style opinions, naming suggestions,
-//          architectural thoughts, and 1 actual bug]"
-// Problem: 7 out of 8 "findings" are opinions, not bugs
+# Step 1: Create a batch with multiple requests
+batch = client.messages.batches.create(
+    requests=[
+        {
+            "custom_id": "invoice-001",
+            "params": {
+                "model": "claude-sonnet-4-20250514",
+                "max_tokens": 1024,
+                "messages": [{
+                    "role": "user",
+                    "content": "Extract vendor and total from: Acme Corp Invoice #1234, Total: $1,250.00"
+                }]
+            }
+        },
+        {
+            "custom_id": "invoice-002",
+            "params": {
+                "model": "claude-sonnet-4-20250514",
+                "max_tokens": 1024,
+                "messages": [{
+                    "role": "user",
+                    "content": "Extract vendor and total from: Beta LLC Invoice #5678, Total: $3,400.00"
+                }]
+            }
+        },
+    ]
+)
 
-// Step 3: Metaprompt — ask Claude to improve the prompt
-const metaPrompt = \`
-I need your help improving a prompt.
+print(f"Batch created: {batch.id}")
+print(f"Status: {batch.processing_status}")
+# 50% cost savings vs individual API calls!
 
-Current prompt:
-"\${draftPrompt}"
+# Step 2: Poll for completion (or use webhooks)
+import time
+while True:
+    result = client.messages.batches.retrieve(batch.id)
+    if result.processing_status == "ended":
+        break
+    print(f"Processing... {result.request_counts}")
+    time.sleep(10)
 
-Output it produced:
-"\${output}"
-
-What went wrong:
-- 7 out of 8 findings were style opinions, not bugs
-- Only 1 actual bug was found
-- The prompt is too vague about what constitutes a "bug"
-
-Please analyze why the prompt failed and write an improved version
-that:
-1. Defines "bug" specifically (crashes, wrong output, security holes)
-2. Explicitly excludes style opinions and architectural preferences
-3. Includes severity classification with concrete examples
-\`;
-
-const improvedPrompt = await callClaude(metaPrompt);
-// Claude generates a much better prompt with explicit criteria,
-// categories, and examples — exactly what we needed!
-
-// Step 4: Test the improved prompt
-const betterOutput = await callClaude(improvedPrompt, codeSample);
-// Output: "Found 2 bugs: [security vulnerability in input validation,
-//          null pointer dereference in error handler]"
-// Much better: specific, actionable, no false positives.
-
-// Step 5 (optional): One more metaprompt iteration
-// If the improved prompt still has issues, repeat steps 2-4.
-// Typically 2-3 iterations produces excellent results.`,
-    antiPatterns: [
-      {
-        pattern: 'Metaprompting in production',
-        problem: 'Metaprompting is slow and expensive. Use it during development to craft optimized prompts, then deploy the static optimized prompts.',
-      },
-    ],
-    keyConcepts: [
-      { concept: 'Metaprompt pattern', description: 'Show Claude its prompt + output + expected output. Ask it to analyze the gap and suggest improvements.' },
-      { concept: 'Iterative refinement', description: '2-3 metaprompt iterations typically produce high-quality prompts that handle edge cases.' },
-      { concept: 'Development-time tool', description: 'Metaprompting is for crafting prompts. The optimized prompts are what you deploy to production.' },
-    ],
-    resources: [
-      { label: 'Prompt Engineering Overview', url: 'https://docs.anthropic.com/en/docs/build-with-claude/prompt-engineering/overview' },
-    ],
-    examTips: [
-      '"How to improve a prompt that produces poor output" → metaprompting: show Claude the prompt + output + expected output, ask for improvements.',
-      'Metaprompting is for development, not production. The exam tests this distinction.',
-    ],
+# Step 3: Retrieve and match results by custom_id
+for entry in client.messages.batches.results(batch.id):
+    print(f"\\n[{entry.custom_id}]")
+    if entry.result.type == "succeeded":
+        content = entry.result.message.content[0].text
+        print(f"  Result: {content}")
+    elif entry.result.type == "errored":
+        print(f"  Error: {entry.result.error}")
+        # Can resubmit this specific request in a new batch`,
   },
   {
     id: '4-6',
-    title: 'Context Engineering & Multi-Instance Review',
+    title: 'Multi-Instance & Multi-Pass Review',
     duration: '45 min',
-    description: 'Design systems with validation feedback loops, multi-pass review architectures, and independent reviewer instances. The key insight: independent review catches issues that self-review misses, and multi-pass analysis catches cross-cutting concerns that single-pass misses.',
+    description: 'Design systems with independent reviewer instances and multi-pass analysis. Understand self-review bias, confidence routing, and why separate Claude instances catch issues that self-review misses.',
     knowledge: [
-      'Validation feedback loops: when Claude\'s output doesn\'t match expectations, feed the error back into the next attempt. "Your previous extraction had these errors: [specific errors]. Fix them." Claude corrects specific issues much better than generic retry.',
-      'Retries are effective when the information IS in the input but the FORMAT was wrong. Retries are INEFFECTIVE when the information is simply NOT in the input. Distinguish these cases before retrying.',
-      'Multi-instance review architecture: use SEPARATE Claude instances for generation and review. The generator produces code. The reviewer (independent instance with no generation context) reviews it. This avoids confirmation bias.',
-      'Why separate instances matter: the generation instance "knows" what it intended and is more likely to approve its own work. The review instance starts fresh and catches issues the generator would miss. The exam tests this directly.',
+      'Self-review bias: a model that generates output retains reasoning context, making it less likely to question its own decisions. It "knows" what it intended and approves its own work. Independent instances (without prior reasoning context) are more effective at catching subtle issues.',
+      'Multi-instance review architecture: use SEPARATE Claude instances for generation and review. The generator produces content. The reviewer (independent instance with no generation context) reviews it. This avoids confirmation bias.',
+      'Why separate instances matter: the generation instance "knows" what it intended and is more likely to approve its own work. The review instance starts fresh and catches issues the generator would miss. The exam tests this distinction directly.',
       'Multi-pass review: Pass 1 = per-file local analysis (syntax, types, bugs). Pass 2 = cross-file integration analysis (imports, interfaces, data flow). Pass 3 = architectural review (patterns, security, performance). Each pass catches different issues.',
-      'Confidence calibration: Claude\'s self-reported confidence is poorly calibrated. A finding rated 0.95 confidence might be wrong, and one rated 0.6 might be right. Use confidence as a routing signal (auto-fix high, human-review medium, investigate low), not as ground truth.',
-      'Batch processing patterns: for large-scale tasks (reviewing 100 files), process in batches. Include a summary of prior batch findings in each new batch to maintain consistency. Without this, Claude treats each batch independently and may give contradictory guidance.',
+      'Confidence routing: use model confidence scores as routing signals, NOT as ground truth. High confidence → auto-approve. Medium confidence → human review. Low confidence → investigate or reject. Confidence is poorly calibrated but useful for relative prioritization.',
       'The "review the reviewer" pattern: periodically sample review outputs and have a human check them. If the reviewer is producing systematic false positives or missing a category of issues, adjust the review prompt. Don\'t trust automated review blindly.',
+      'Batch review patterns: for large-scale tasks (reviewing 100 files), process in batches. Include a summary of prior batch findings in each new batch to maintain consistency. Without this, Claude treats each batch independently and may give contradictory guidance.',
+      'Cross-cutting concerns: single-pass review misses issues that span multiple files or components. Security vulnerabilities in the interaction between two components, data flow issues across API boundaries — these require multi-pass or integration-level review.',
+      'Cost vs coverage tradeoff: every additional review pass costs tokens. Not every output needs 3 passes. Route complexity: simple outputs → single pass, complex outputs → multi-pass, high-stakes outputs → human + multi-pass.',
+      'Common exam trap: "Use Claude to review its own output for errors." This is self-review. The correct pattern is "Use a separate Claude instance to review the output." The distinction matters — independent review catches more issues.',
     ],
-    skills: [
-      'Implement retry with specific error feedback',
-      'Design multi-pass review architectures',
-      'Use separate instances for generation and review',
-      'Route findings by confidence level',
-    ],
-    codeExample: `// Multi-Instance Review Architecture
+    codeExample: `import anthropic
 
-// Step 1: Generator Instance (produces code)
-const generatorInstance = {
-  model: "claude-sonnet-4-20250514",
-  systemPrompt: \`You are a senior developer implementing features.
-Write clean, well-tested code following the project's conventions.\`
-};
+client = anthropic.Anthropic()
 
-const generatedCode = await execute(generatorInstance, {
-  task: "Implement user authentication with JWT tokens"
-});
+# GENERATOR: Separate instance produces code
+gen_response = client.messages.create(
+    model="claude-sonnet-4-20250514",
+    max_tokens=1024,
+    messages=[{"role": "user",
+        "content": "Write a Python function that validates email addresses."}]
+)
+generated_code = gen_response.content[0].text
+print(f"[generator] Produced {len(generated_code)} chars of code")
 
-// Step 2: Reviewer Instance (INDEPENDENT — no generation context)
-const reviewerInstance = {
-  model: "claude-sonnet-4-20250514",
-  // Different system prompt, different perspective
-  systemPrompt: \`You are a security-focused code reviewer.
-Assume the code has bugs. Question every decision.
-You have NO context about how this code was written.\`
-};
+# REVIEWER: INDEPENDENT instance (no generation context!)
+# This is NOT self-review — it's a fresh Claude instance
+review_prompt = (
+    "You are a code reviewer. Review this code for bugs, "
+    "security issues, and edge cases. Be critical.\\n\\n"
+    f"Code to review:\\n{generated_code}\\n\\n"
+    "List specific issues found. Do NOT be lenient."
+)
+review_response = client.messages.create(
+    model="claude-sonnet-4-20250514",
+    max_tokens=1024,
+    messages=[{"role": "user", "content": review_prompt}]
+)
+review = review_response.content[0].text
+print(f"[reviewer] Found issues:\\n{review}")
 
-const reviewFindings = await execute(reviewerInstance, {
-  task: \`Review this authentication code for:
-1. Security vulnerabilities (SQL injection, XSS, token leaks)
-2. Error handling gaps
-3. Edge cases (expired tokens, malformed input, concurrent requests)
-Code: \${generatedCode}\`
-});
-
-// Why separate instances:
-// Generator "knows" it handled the null case and won't flag it
-// Reviewer sees the code fresh and notices the null check is wrong
-// Independent review catches what self-review misses
-
-// Multi-Pass Review Architecture
-async function multiPassReview(files) {
-  const allFindings = [];
-
-  // Pass 1: Per-file LOCAL analysis
-  console.log("Pass 1: Local analysis...");
-  const localFindings = await Promise.all(
-    files.map(file => execute(reviewerInstance, {
-      task: \`Analyze \${file.path} for local issues:
-      - Syntax errors
-      - Type errors
-      - Missing null checks
-      - Unhandled exceptions\`,
-      context: { fileContent: file.content }
-    }))
-  );
-  allFindings.push(...localFindings.flat());
-
-  // Pass 2: Cross-file INTEGRATION analysis
-  console.log("Pass 2: Integration analysis...");
-  const integrationFindings = await execute(reviewerInstance, {
-    task: \`Analyze cross-file integration issues:
-    - Missing imports / broken exports
-    - Interface mismatches between modules
-    - Circular dependencies
-    - Data flow inconsistencies\`,
-    context: {
-      files: files.map(f => ({ path: f.path, exports: f.exports, imports: f.imports })),
-      localFindings: allFindings
-    }
-  });
-  allFindings.push(...integrationFindings);
-
-  // Pass 3: Architectural review (optional, for critical code)
-  console.log("Pass 3: Architectural review...");
-  const archFindings = await execute(reviewerInstance, {
-    task: \`Review architecture and security:
-    - Authentication flow vulnerabilities
-    - Authorization bypass possibilities
-    - Data exposure risks
-    - Performance bottleneck patterns\`,
-    context: { files, priorFindings: allFindings }
-  });
-
-  return { findings: allFindings, passes: 3 };
-}
-
-// Confidence-based routing
-function routeByConfidence(findings) {
-  return {
-    autoFix: findings.filter(f => f.confidence >= 0.9),
-    humanReview: findings.filter(f => f.confidence >= 0.7 && f.confidence < 0.9),
-    investigate: findings.filter(f => f.confidence < 0.7)
-  };
-}
-
-// Validation feedback loop
-async function extractWithRetry(document, maxAttempts = 3) {
-  let attempt = 1;
-  let prompt = \`Extract company data from this document: \${document}\`;
-
-  while (attempt <= maxAttempts) {
-    const result = await callClaude(prompt);
-    const errors = validate(result);
-
-    if (errors.length === 0) return result;
-
-    // Feed SPECIFIC errors back — not generic "try again"
-    prompt = \`Previous extraction had these specific errors:
-\${errors.map(e => "- " + e).join("\\n")}
-
-Original document: \${document}
-
-Fix ONLY the errors listed above.\`;
-
-    attempt++;
-  }
-}`,
-    antiPatterns: [
-      {
-        pattern: 'Self-review in the same session',
-        problem: '"Generate code, then review it" in one session creates confirmation bias. Claude approves its own work. Use separate instances.',
-      },
-      {
-        pattern: 'Single-pass review for complex systems',
-        problem: 'One pass catches local issues but misses cross-file integration problems. Use multi-pass: local → integration → architectural.',
-      },
-      {
-        pattern: 'Trusting self-reported confidence blindly',
-        problem: 'Claude\'s confidence scores are poorly calibrated. Use as routing signal, not ground truth. High confidence ≠ correct.',
-      },
-    ],
-    keyConcepts: [
-      { concept: 'Independent reviewer', description: 'Separate Claude instance for review. No generation context. Catches what self-review misses.' },
-      { concept: 'Multi-pass review', description: 'Pass 1: local issues. Pass 2: cross-file integration. Pass 3: architecture/security. Each catches different issues.' },
-      { concept: 'Validation feedback loop', description: 'Retry with SPECIFIC error feedback, not generic "try again." Effective for format errors, not missing info.' },
-      { concept: 'Confidence routing', description: 'Auto-fix high confidence, human-review medium, investigate low. Don\'t trust scores as absolute truth.' },
-    ],
-    resources: [
-      { label: 'Prompt Engineering Overview', url: 'https://docs.anthropic.com/en/docs/build-with-claude/prompt-engineering/overview' },
-    ],
-    examTips: [
-      '"Same session generates and reviews" → confirmation bias. Use separate instances.',
-      '"Retries don\'t find missing info" → retries fix FORMAT, not absence. Know when they\'re effective.',
-      'Multi-pass: local → integration → architecture. The exam tests why multiple passes are needed.',
-      'Confidence calibration is POOR. The exam tests that you know not to trust self-reported confidence.',
-    ],
+# MULTI-PASS: Pass 2 = integration / cross-cutting concerns
+pass2_prompt = (
+    "Review for cross-cutting concerns:\\n"
+    "- Error handling completeness\\n"
+    "- User-friendly error messages\\n"
+    f"- International email formats\\n\\n"
+    f"Original code:\\n{generated_code}\\n\\n"
+    f"Pass 1 findings:\\n{review}"
+)
+pass2 = client.messages.create(
+    model="claude-sonnet-4-20250514",
+    max_tokens=1024,
+    messages=[{"role": "user", "content": pass2_prompt}]
+)
+print(f"[pass-2] Integration review:\\n{pass2.content[0].text}")`,
   },
   {
-    id: '4-exam',
+    id: '4-quiz',
     title: 'Domain 4 Exam Practice Quiz',
     duration: '15 min',
     description: 'Interactive quiz covering all 6 subdomains of prompt engineering and structured output.',
