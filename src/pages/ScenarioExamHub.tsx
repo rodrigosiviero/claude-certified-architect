@@ -6,10 +6,11 @@ import {
   generateRandomExam, generateDomainExam, generateFullExam,
   getPoolStats, type GeneratedExam, type UnifiedQuestion,
 } from '../data/questionBank';
+import { scenarioExams } from '../data/scenarioExams';
 import {
   ArrowLeft, ArrowRight, BarChart3, Brain, CheckCircle2, ChevronDown,
   Clock, FlaskConical, Lightbulb, RotateCcw, Trophy, XCircle, Target,
-  AlertTriangle, Scroll, Shuffle, Zap, BookOpen,
+  AlertTriangle, Scroll, Shuffle, Zap, BookOpen, Sparkles, Briefcase,
 } from 'lucide-react';
 
 // ── Domain meta ──────────────────────────────────────────────────────────────
@@ -23,12 +24,36 @@ const domainMeta: Record<string, { label: string; color: string; bg: string; bor
 
 const domainIcons: Record<string, string> = { d1: '🏗️', d2: '🔧', d3: '⚙️', d4: '🎨', d5: '🛡️' };
 
+const scenarioColors = [
+  { bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-700', hover: 'hover:border-blue-400' },
+  { bg: 'bg-emerald-50', border: 'border-emerald-200', text: 'text-emerald-700', hover: 'hover:border-emerald-400' },
+  { bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-700', hover: 'hover:border-amber-400' },
+  { bg: 'bg-violet-50', border: 'border-violet-200', text: 'text-violet-700', hover: 'hover:border-violet-400' },
+  { bg: 'bg-rose-50', border: 'border-rose-200', text: 'text-rose-700', hover: 'hover:border-rose-400' },
+  { bg: 'bg-cyan-50', border: 'border-cyan-200', text: 'text-cyan-700', hover: 'hover:border-cyan-400' },
+];
+
 type Phase = 'hub' | 'exam' | 'results';
 
 // ── Shuffled question wrapper ─────────────────────────────────────────────
 interface ShuffledQ extends UnifiedQuestion {
   shuffledOptions: string[];
   shuffledCorrect: number;
+}
+
+// Convert a scenario exam question to UnifiedQuestion format
+function scenarioToUnified(examId: number, q: { id: number; domain: string; domainLabel: string; scenario: string; question: string; options: string[]; correct: number; explanation: string; trap?: string }): UnifiedQuestion {
+  return {
+    poolId: (examId - 1) * 20 + q.id,
+    domain: q.domain as UnifiedQuestion['domain'],
+    domainLabel: q.domainLabel,
+    scenario: q.scenario,
+    question: q.question,
+    options: [...q.options],
+    correct: q.correct,
+    explanation: q.explanation,
+    trap: q.trap,
+  };
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -43,17 +68,71 @@ function HubPhase({ onStart }: { onStart: (exam: GeneratedExam) => void }) {
     return examCounter + 1;
   }, [examCounter]);
 
+  const handleScenarioExam = (examIdx: number) => {
+    const exam = scenarioExams[examIdx];
+    onStart({
+      id: `scenario-${exam.id}`,
+      title: exam.title,
+      description: exam.description,
+      icon: exam.icon,
+      questions: exam.questions.map(q => scenarioToUnified(exam.id, q)),
+      mode: 'random',
+    });
+  };
+
   return (
     <div className="space-y-8">
       {/* Header */}
       <div className="text-center">
-        <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Exam Simulator</h2>
+        <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Exam Center</h2>
         <p className="text-slate-600 dark:text-slate-400 mt-2">
-          Practice with questions drawn from a pool of <strong>{stats.total}</strong> questions — fresh mix every time.
+          Practice with scenario-based exams and randomized quizzes from a pool of <strong>{stats.total}</strong> questions.
         </p>
       </div>
 
-      {/* Pool stats */}
+      {/* ── SECTION 1: Scenario Exams (fixed) ────────────────────────────── */}
+      <div>
+        <div className="flex items-center gap-2 mb-4">
+          <Briefcase className="w-5 h-5 text-violet-500" />
+          <h3 className="text-lg font-bold text-slate-900 dark:text-white">Scenario Exams</h3>
+          <span className="text-xs text-slate-400 font-normal">6 themed exams • 20Q each • fixed questions</span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {scenarioExams.map((exam, idx) => {
+            const c = scenarioColors[idx % scenarioColors.length];
+            return (
+              <button
+                key={exam.id}
+                onClick={() => handleScenarioExam(idx)}
+                className={`group rounded-xl border-2 ${c.border} ${c.bg} ${c.hover} p-4 text-left transition-all hover:shadow-md`}
+              >
+                <div className="flex items-start gap-3">
+                  <span className="text-3xl">{exam.icon}</span>
+                  <div className="flex-1 min-w-0">
+                    <h4 className={`font-semibold text-sm ${c.text}`}>{exam.title}</h4>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 line-clamp-2">{exam.description}</p>
+                    <div className="flex items-center gap-2 mt-2">
+                      <span className="text-xs font-medium text-slate-500 bg-white/60 dark:bg-slate-800/60 px-2 py-0.5 rounded">
+                        {exam.questions.length} questions
+                      </span>
+                      <span className="text-xs text-slate-400">4 per domain</span>
+                    </div>
+                  </div>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ── Pool stats ─────────────────────────────────────────────────── */}
+      <div className="flex items-center gap-2 mb-2">
+        <Shuffle className="w-5 h-5 text-emerald-500" />
+        <h3 className="text-lg font-bold text-slate-900 dark:text-white">Random Simulator</h3>
+        <span className="text-xs text-slate-400 font-normal">{stats.total} questions in pool • fresh mix every time</span>
+      </div>
+
       <div className="grid grid-cols-5 gap-2">
         {['d1','d2','d3','d4','d5'].map(d => (
           <div key={d} className={`${domainMeta[d].bg} rounded-lg p-3 text-center border ${domainMeta[d].border}`}>
@@ -65,7 +144,7 @@ function HubPhase({ onStart }: { onStart: (exam: GeneratedExam) => void }) {
         ))}
       </div>
 
-      {/* Exam modes */}
+      {/* ── SECTION 2: Random Simulator modes ──────────────────────────── */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Random 20Q */}
         <button
@@ -75,11 +154,11 @@ function HubPhase({ onStart }: { onStart: (exam: GeneratedExam) => void }) {
           <div className="flex items-center gap-3 mb-3">
             <div className="w-12 h-12 rounded-xl bg-violet-500 text-white flex items-center justify-center text-2xl">🎲</div>
             <div>
-              <h3 className="font-bold text-violet-900">Random Simulated</h3>
-              <p className="text-sm text-violet-600">20 questions</p>
+              <h3 className="font-bold text-violet-900">Random 20Q</h3>
+              <p className="text-sm text-violet-600">Quick practice</p>
             </div>
           </div>
-          <p className="text-sm text-violet-700">4 questions per domain. Fresh mix every time. Perfect for quick practice.</p>
+          <p className="text-sm text-violet-700">4 questions per domain. Fresh mix every click.</p>
           <Shuffle className="absolute -right-2 -bottom-2 w-16 h-16 text-violet-200 group-hover:text-violet-300 transition-colors" />
         </button>
 
@@ -89,7 +168,7 @@ function HubPhase({ onStart }: { onStart: (exam: GeneratedExam) => void }) {
             <div className="w-12 h-12 rounded-xl bg-emerald-500 text-white flex items-center justify-center text-2xl">🎯</div>
             <div>
               <h3 className="font-bold text-emerald-900">Domain Focus</h3>
-              <p className="text-sm text-emerald-600">All questions from one domain</p>
+              <p className="text-sm text-emerald-600">Drill one domain</p>
             </div>
           </div>
           <div className="grid grid-cols-5 gap-1 mt-3">
@@ -115,21 +194,21 @@ function HubPhase({ onStart }: { onStart: (exam: GeneratedExam) => void }) {
           <div className="flex items-center gap-3 mb-3">
             <div className="w-12 h-12 rounded-xl bg-amber-500 text-white flex items-center justify-center text-2xl">📝</div>
             <div>
-              <h3 className="font-bold text-amber-900">Full Exam</h3>
-              <p className="text-sm text-amber-600">60 questions</p>
+              <h3 className="font-bold text-amber-900">Full Exam (60Q)</h3>
+              <p className="text-sm text-amber-600">Real exam simulation</p>
             </div>
           </div>
-          <p className="text-sm text-amber-700">12 questions per domain. Simulates the real certification exam experience.</p>
+          <p className="text-sm text-amber-700">12 per domain. Simulates the real certification exam.</p>
           <BookOpen className="absolute -right-2 -bottom-2 w-16 h-16 text-amber-200 group-hover:text-amber-300 transition-colors" />
         </button>
       </div>
 
-      {/* Quick tips */}
+      {/* Tip */}
       <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 p-4">
         <div className="flex items-start gap-2">
           <Lightbulb className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" />
           <div className="text-sm text-blue-700 dark:text-blue-300">
-            <strong>Pro tip:</strong> Each exam is randomly generated from the question pool. Every time you click, you get a fresh set of questions. Answer options are also shuffled daily to prevent memorization.
+            <strong>Pro tip:</strong> Scenario exams test real-world application with themed stories. The Random Simulator mixes questions from the entire pool — answer options are shuffled daily to prevent memorization.
           </div>
         </div>
       </div>
@@ -169,9 +248,15 @@ function ExamPhase({
           <ArrowLeft className="w-4 h-4" /> Exit
         </button>
         <div className="flex items-center gap-3">
-          <span className={`text-xs font-medium px-2 py-1 rounded-full ${dm.bg} ${dm.color}`}>{dm.label}</span>
-          <span className="text-sm text-slate-500">{answeredCount}/{shuffled.length}</span>
+          <span className="text-lg">{exam.icon}</span>
+          <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{exam.title}</span>
         </div>
+      </div>
+
+      {/* Domain + progress */}
+      <div className="flex items-center justify-between">
+        <span className={`text-xs font-medium px-2 py-1 rounded-full ${dm.bg} ${dm.color}`}>{dm.label}</span>
+        <span className="text-sm text-slate-500">{answeredCount}/{shuffled.length} answered</span>
       </div>
 
       {/* Progress bar */}
@@ -270,11 +355,11 @@ function ExamPhase({
 
       {/* Navigation */}
       <div className="flex justify-between items-center">
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           {shuffled.map((_, i) => (
             <button
               key={i}
-              onClick={() => {/* could implement jump-to but keep simple */}}
+              onClick={() => {/* jump-to disabled for simplicity */}}
               disabled
               className={`w-3 h-3 rounded-full transition-all ${
                 i === currentQ ? 'bg-violet-600 scale-125' : answers[i] !== undefined ? 'bg-violet-300' : 'bg-slate-200'
@@ -295,18 +380,9 @@ function ExamPhase({
           )}
         </div>
       </div>
-
-      {answeredCount < shuffled.length && showFeedback && !isLast && (
-        <p className="text-center text-sm text-slate-400">
-          ⚠ {shuffled.length - answeredCount} remaining — answer all questions before submitting
-        </p>
-      )}
     </div>
   );
 }
-
-// Need to import Sparkles for feedback section
-import { Sparkles } from 'lucide-react';
 
 // ══════════════════════════════════════════════════════════════════════════════
 // RESULTS PHASE
@@ -329,7 +405,7 @@ function ResultsPhase({
 
   const domainBreakdown = ['d1','d2','d3','d4','d5'].map(d => {
     const qs = shuffled.filter(q => q.domain === d);
-    const correct = qs.reduce((acc, q, idx) => {
+    const correct = qs.reduce((acc, q) => {
       const globalIdx = shuffled.indexOf(q);
       return acc + (answers[globalIdx] === q.shuffledCorrect ? 1 : 0);
     }, 0);
@@ -350,6 +426,7 @@ function ResultsPhase({
 
       {/* Score card */}
       <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-8 text-center">
+        <div className="text-sm text-slate-400 mb-2">{exam.icon} {exam.title}</div>
         <div className="text-5xl mb-2">{grade.icon}</div>
         <h2 className={`text-2xl font-bold ${grade.color}`}>{grade.label}</h2>
         <div className="mt-4 flex items-center justify-center gap-4">
@@ -361,17 +438,19 @@ function ResultsPhase({
         </div>
 
         {/* Domain breakdown */}
-        <div className="mt-6 grid grid-cols-5 gap-2">
-          {domainBreakdown.map(d => {
-            const dm = domainMeta[d.domain];
-            return (
-              <div key={d.domain} className={`${dm.bg} rounded-lg p-2 border ${dm.border}`}>
-                <div className={`text-xs font-medium ${dm.color}`}>D{d.domain[1]}</div>
-                <div className="text-sm font-bold text-slate-900 dark:text-white">{d.correct}/{d.total}</div>
-              </div>
-            );
-          })}
-        </div>
+        {domainBreakdown.length > 1 && (
+          <div className={`mt-6 grid gap-2 ${domainBreakdown.length <= 3 ? 'grid-cols-3' : 'grid-cols-5'}`}>
+            {domainBreakdown.map(d => {
+              const dm = domainMeta[d.domain];
+              return (
+                <div key={d.domain} className={`${dm.bg} rounded-lg p-2 border ${dm.border}`}>
+                  <div className={`text-xs font-medium ${dm.color}`}>D{d.domain[1]}</div>
+                  <div className="text-sm font-bold text-slate-900 dark:text-white">{d.correct}/{d.total}</div>
+                </div>
+              );
+            })}
+          </div>
+        )}
 
         {/* Actions */}
         <div className="mt-6 flex justify-center gap-3">
@@ -388,7 +467,7 @@ function ResultsPhase({
       <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-semibold text-slate-900 dark:text-white">Review Answers</h3>
-          <div className="flex gap-1">
+          <div className="flex gap-1 flex-wrap">
             <button
               onClick={() => setFilterDomain('all')}
               className={`px-3 py-1 rounded text-xs font-medium ${filterDomain === 'all' ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-600'}`}
@@ -413,7 +492,6 @@ function ResultsPhase({
             const userAnswer = answers[globalIdx];
             const isCorrect = userAnswer === q.shuffledCorrect;
             const isExpanded = expandedReview === globalIdx;
-            const dm = domainMeta[q.domain] || domainMeta.d1;
 
             return (
               <div key={globalIdx} className={`rounded-xl border p-4 ${isCorrect ? 'border-green-200 bg-green-50/50' : 'border-red-200 bg-red-50/50'}`}>
@@ -525,9 +603,9 @@ export default function ScenarioExamHub() {
           <Link to="/" className="text-slate-400 hover:text-slate-600"><ArrowLeft className="w-5 h-5" /></Link>
           <div>
             <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-              <FlaskConical className="w-6 h-6 text-violet-500" /> Scenario Exams
+              <FlaskConical className="w-6 h-6 text-violet-500" /> Exam Center
             </h1>
-            <p className="text-sm text-slate-500">Randomized practice exams from the question pool</p>
+            <p className="text-sm text-slate-500">Scenario exams + randomized practice</p>
           </div>
         </div>
 
