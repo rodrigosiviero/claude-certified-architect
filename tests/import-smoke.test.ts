@@ -111,4 +111,25 @@ describe('data file imports resolve', () => {
     expect(mod.allFlashcards.length).toBeGreaterThan(50);
     expect(Object.keys(mod.flashcardsByDomain).length).toBe(5);
   });
+
+  it('question bank imports and generates exams', async () => {
+    const mod = await import('../src/data/questionBank/index.ts');
+    const stats = mod.getPoolStats();
+    expect(stats.total).toBeGreaterThanOrEqual(150);
+    expect(Object.keys(stats.byDomain).length).toBe(5);
+    for (const d of ['d1','d2','d3','d4','d5']) {
+      expect(stats.byDomain[d]).toBeGreaterThanOrEqual(20);
+    }
+    const randomExam = mod.generateRandomExam(42);
+    expect(randomExam.questions.length).toBe(20);
+    expect(randomExam.mode).toBe('random');
+
+    const domainExam = mod.generateDomainExam('d1', 42);
+    expect(domainExam.questions.every(q => q.domain === 'd1')).toBe(true);
+    expect(domainExam.mode).toBe('domain');
+
+    const fullExam = mod.generateFullExam(42);
+    expect(fullExam.questions.length).toBe(60);
+    expect(fullExam.mode).toBe('full');
+  });
 });

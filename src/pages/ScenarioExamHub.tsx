@@ -1,12 +1,15 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { scenarioExams } from '../data/scenarioExams';
 import { useCourse } from '../context/CourseContext';
 import { shuffleAllOptions } from '../utils/shuffle';
 import {
+  generateRandomExam, generateDomainExam, generateFullExam,
+  getPoolStats, type GeneratedExam, type UnifiedQuestion,
+} from '../data/questionBank';
+import {
   ArrowLeft, ArrowRight, BarChart3, Brain, CheckCircle2, ChevronDown,
   Clock, FlaskConical, Lightbulb, RotateCcw, Trophy, XCircle, Target,
-  AlertTriangle, Scroll,
+  AlertTriangle, Scroll, Shuffle, Zap, BookOpen,
 } from 'lucide-react';
 
 // ── Domain meta ──────────────────────────────────────────────────────────────
@@ -18,443 +21,530 @@ const domainMeta: Record<string, { label: string; color: string; bg: string; bor
   d5: { label: 'Safety & Evaluation', color: 'text-red-700', bg: 'bg-red-50', border: 'border-red-200' },
 };
 
-const examColors = [
-  { bg: 'bg-blue-600', light: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-700', gradient: 'from-blue-500 to-cyan-500' },
-  { bg: 'bg-emerald-600', light: 'bg-emerald-50', border: 'border-emerald-200', text: 'text-emerald-700', gradient: 'from-emerald-500 to-teal-500' },
-  { bg: 'bg-amber-600', light: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-700', gradient: 'from-amber-500 to-orange-500' },
-  { bg: 'bg-violet-600', light: 'bg-violet-50', border: 'border-violet-200', text: 'text-violet-700', gradient: 'from-violet-500 to-purple-500' },
-  { bg: 'bg-rose-600', light: 'bg-rose-50', border: 'border-rose-200', text: 'text-rose-700', gradient: 'from-rose-500 to-pink-500' },
-  { bg: 'bg-cyan-600', light: 'bg-cyan-50', border: 'border-cyan-200', text: 'text-cyan-700', gradient: 'from-cyan-500 to-blue-500' },
-];
+const domainIcons: Record<string, string> = { d1: '🏗️', d2: '🔧', d3: '⚙️', d4: '🎨', d5: '🛡️' };
 
 type Phase = 'hub' | 'exam' | 'results';
 
+// ── Shuffled question wrapper ─────────────────────────────────────────────
+interface ShuffledQ extends UnifiedQuestion {
+  shuffledOptions: string[];
+  shuffledCorrect: number;
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// HUB PHASE
+// ══════════════════════════════════════════════════════════════════════════════
+function HubPhase({ onStart }: { onStart: (exam: GeneratedExam) => void }) {
+  const stats = getPoolStats();
+  const [examCounter, setExamCounter] = useState(() => Date.now());
+
+  const makeSeed = useCallback(() => {
+    setExamCounter(c => c + 1);
+    return examCounter + 1;
+  }, [examCounter]);
+
+  return (
+    <div className="space-y-8">
+      {/* Header */}
+      <div className="text-center">
+        <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Exam Simulator</h2>
+        <p className="text-slate-600 dark:text-slate-400 mt-2">
+          Practice with questions drawn from a pool of <strong>{stats.total}</strong> questions — fresh mix every time.
+        </p>
+      </div>
+
+      {/* Pool stats */}
+      <div className="grid grid-cols-5 gap-2">
+        {['d1','d2','d3','d4','d5'].map(d => (
+          <div key={d} className={`${domainMeta[d].bg} rounded-lg p-3 text-center border ${domainMeta[d].border}`}>
+            <div className="text-2xl">{domainIcons[d]}</div>
+            <div className={`text-xs font-medium mt-1 ${domainMeta[d].color}`}>D{d[1]}</div>
+            <div className="text-lg font-bold text-slate-900 dark:text-white">{stats.byDomain[d]}</div>
+            <div className="text-xs text-slate-500">questions</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Exam modes */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Random 20Q */}
+        <button
+          onClick={() => onStart(generateRandomExam(makeSeed()))}
+          className="group relative overflow-hidden rounded-2xl border-2 border-violet-200 bg-violet-50 p-6 text-left hover:border-violet-400 hover:shadow-lg transition-all"
+        >
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-12 h-12 rounded-xl bg-violet-500 text-white flex items-center justify-center text-2xl">🎲</div>
+            <div>
+              <h3 className="font-bold text-violet-900">Random Simulated</h3>
+              <p className="text-sm text-violet-600">20 questions</p>
+            </div>
+          </div>
+          <p className="text-sm text-violet-700">4 questions per domain. Fresh mix every time. Perfect for quick practice.</p>
+          <Shuffle className="absolute -right-2 -bottom-2 w-16 h-16 text-violet-200 group-hover:text-violet-300 transition-colors" />
+        </button>
+
+        {/* Domain Focus */}
+        <div className="rounded-2xl border-2 border-emerald-200 bg-emerald-50 p-6">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-12 h-12 rounded-xl bg-emerald-500 text-white flex items-center justify-center text-2xl">🎯</div>
+            <div>
+              <h3 className="font-bold text-emerald-900">Domain Focus</h3>
+              <p className="text-sm text-emerald-600">All questions from one domain</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-5 gap-1 mt-3">
+            {['d1','d2','d3','d4','d5'].map(d => (
+              <button
+                key={d}
+                onClick={() => onStart(generateDomainExam(d, makeSeed()))}
+                className={`${domainMeta[d].bg} ${domainMeta[d].color} rounded-lg p-2 text-center text-xs font-medium hover:opacity-80 transition-opacity border ${domainMeta[d].border}`}
+              >
+                D{d[1]}
+                <br />
+                <span className="text-[10px] opacity-75">{stats.byDomain[d]}q</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Full Exam */}
+        <button
+          onClick={() => onStart(generateFullExam(makeSeed()))}
+          className="group relative overflow-hidden rounded-2xl border-2 border-amber-200 bg-amber-50 p-6 text-left hover:border-amber-400 hover:shadow-lg transition-all"
+        >
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-12 h-12 rounded-xl bg-amber-500 text-white flex items-center justify-center text-2xl">📝</div>
+            <div>
+              <h3 className="font-bold text-amber-900">Full Exam</h3>
+              <p className="text-sm text-amber-600">60 questions</p>
+            </div>
+          </div>
+          <p className="text-sm text-amber-700">12 questions per domain. Simulates the real certification exam experience.</p>
+          <BookOpen className="absolute -right-2 -bottom-2 w-16 h-16 text-amber-200 group-hover:text-amber-300 transition-colors" />
+        </button>
+      </div>
+
+      {/* Quick tips */}
+      <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 p-4">
+        <div className="flex items-start gap-2">
+          <Lightbulb className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" />
+          <div className="text-sm text-blue-700 dark:text-blue-300">
+            <strong>Pro tip:</strong> Each exam is randomly generated from the question pool. Every time you click, you get a fresh set of questions. Answer options are also shuffled daily to prevent memorization.
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// EXAM PHASE
+// ══════════════════════════════════════════════════════════════════════════════
+function ExamPhase({
+  exam, shuffled, answers, currentQ, showFeedback, selectedAnswer,
+  onSelect, onNext, onSubmit, onBack,
+}: {
+  exam: GeneratedExam;
+  shuffled: ShuffledQ[];
+  answers: Record<number, number>;
+  currentQ: number;
+  showFeedback: boolean;
+  selectedAnswer: number | null;
+  onSelect: (index: number) => void;
+  onNext: () => void;
+  onSubmit: () => void;
+  onBack: () => void;
+}) {
+  const q = shuffled[currentQ];
+  const answeredCount = Object.keys(answers).length;
+  const isCorrect = selectedAnswer === q.shuffledCorrect;
+  const dm = domainMeta[q.domain] || domainMeta.d1;
+  const isLast = currentQ === shuffled.length - 1;
+
+  return (
+    <div className="max-w-3xl mx-auto space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <button onClick={onBack} className="flex items-center gap-1 text-sm text-slate-500 hover:text-slate-700">
+          <ArrowLeft className="w-4 h-4" /> Exit
+        </button>
+        <div className="flex items-center gap-3">
+          <span className={`text-xs font-medium px-2 py-1 rounded-full ${dm.bg} ${dm.color}`}>{dm.label}</span>
+          <span className="text-sm text-slate-500">{answeredCount}/{shuffled.length}</span>
+        </div>
+      </div>
+
+      {/* Progress bar */}
+      <div className="w-full bg-slate-200 rounded-full h-2">
+        <div className="bg-violet-500 h-2 rounded-full transition-all" style={{ width: `${(answeredCount / shuffled.length) * 100}%` }} />
+      </div>
+
+      {/* Question */}
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6">
+        <div className="text-xs text-slate-400 mb-2">Question {currentQ + 1} of {shuffled.length}</div>
+
+        {/* Scenario */}
+        <div className="bg-slate-50 dark:bg-slate-800 rounded-xl p-4 mb-4 text-sm text-slate-700 dark:text-slate-300 italic">
+          {q.scenario}
+        </div>
+
+        <h3 className="font-semibold text-slate-900 dark:text-white mb-4">{q.question}</h3>
+
+        {/* Options */}
+        <div className="space-y-2">
+          {q.shuffledOptions.map((opt, i) => {
+            const letter = String.fromCharCode(65 + i);
+            let optClass = 'border-slate-200 hover:border-slate-300 hover:bg-slate-50 cursor-pointer';
+            let letterBg = 'bg-slate-100 text-slate-600';
+
+            if (showFeedback) {
+              if (i === q.shuffledCorrect) {
+                optClass = 'border-green-300 bg-green-50';
+                letterBg = 'bg-green-500 text-white';
+              } else if (i === selectedAnswer && !isCorrect) {
+                optClass = 'border-red-300 bg-red-50';
+                letterBg = 'bg-red-500 text-white';
+              } else {
+                optClass = 'border-slate-100 bg-slate-50 opacity-50';
+              }
+            } else if (i === selectedAnswer) {
+              optClass = 'border-slate-400 bg-slate-100';
+            }
+
+            return (
+              <button
+                key={i}
+                onClick={() => onSelect(i)}
+                disabled={showFeedback}
+                className={`w-full text-left rounded-xl border p-4 transition-all flex items-center gap-3 ${optClass}`}
+              >
+                <span className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold flex-shrink-0 ${letterBg}`}>
+                  {letter}
+                </span>
+                <span className="text-sm text-slate-700 dark:text-slate-300">{opt}</span>
+                {showFeedback && i === q.shuffledCorrect && (
+                  <CheckCircle2 className="w-5 h-5 text-green-500 ml-auto flex-shrink-0" />
+                )}
+                {showFeedback && i === selectedAnswer && !isCorrect && i !== q.shuffledCorrect && (
+                  <XCircle className="w-5 h-5 text-red-500 ml-auto flex-shrink-0" />
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Feedback */}
+        {showFeedback && (
+          <div className="mt-4 space-y-2">
+            <div className={`flex items-start gap-2 p-3 rounded-lg ${isCorrect ? 'bg-green-50' : 'bg-red-50'}`}>
+              {isCorrect ? (
+                <CheckCircle2 className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
+              ) : (
+                <XCircle className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" />
+              )}
+              <div>
+                <p className={`text-sm font-medium ${isCorrect ? 'text-green-700' : 'text-red-700'}`}>
+                  {isCorrect ? 'Correct!' : 'Incorrect'}
+                </p>
+                <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">{q.explanation}</p>
+              </div>
+            </div>
+            {!isCorrect && (
+              <div className="flex items-start gap-2">
+                <Sparkles className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                <p className="text-sm text-green-700">
+                  <span className="font-semibold">Correct answer: </span>
+                  {q.shuffledOptions[q.shuffledCorrect]}
+                </p>
+              </div>
+            )}
+            {q.trap && (
+              <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-50">
+                <AlertTriangle className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
+                <p className="text-sm text-amber-700"><strong>Trap:</strong> {q.trap}</p>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Navigation */}
+      <div className="flex justify-between items-center">
+        <div className="flex gap-2">
+          {shuffled.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => {/* could implement jump-to but keep simple */}}
+              disabled
+              className={`w-3 h-3 rounded-full transition-all ${
+                i === currentQ ? 'bg-violet-600 scale-125' : answers[i] !== undefined ? 'bg-violet-300' : 'bg-slate-200'
+              }`}
+            />
+          ))}
+        </div>
+        <div className="flex gap-2">
+          {showFeedback && !isLast && (
+            <button onClick={onNext} className="flex items-center gap-1 px-4 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700">
+              Next <ArrowRight className="w-4 h-4" />
+            </button>
+          )}
+          {showFeedback && isLast && (
+            <button onClick={onSubmit} className="flex items-center gap-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+              <Trophy className="w-4 h-4" /> See Results
+            </button>
+          )}
+        </div>
+      </div>
+
+      {answeredCount < shuffled.length && showFeedback && !isLast && (
+        <p className="text-center text-sm text-slate-400">
+          ⚠ {shuffled.length - answeredCount} remaining — answer all questions before submitting
+        </p>
+      )}
+    </div>
+  );
+}
+
+// Need to import Sparkles for feedback section
+import { Sparkles } from 'lucide-react';
+
+// ══════════════════════════════════════════════════════════════════════════════
+// RESULTS PHASE
+// ══════════════════════════════════════════════════════════════════════════════
+function ResultsPhase({
+  exam, shuffled, answers, onRetry, onBack,
+}: {
+  exam: GeneratedExam;
+  shuffled: ShuffledQ[];
+  answers: Record<number, number>;
+  onRetry: () => void;
+  onBack: () => void;
+}) {
+  const score = shuffled.reduce((acc, q, i) => acc + (answers[i] === q.shuffledCorrect ? 1 : 0), 0);
+  const pct = Math.round((score / shuffled.length) * 100);
+  const [filterDomain, setFilterDomain] = useState<string>('all');
+  const [expandedReview, setExpandedReview] = useState<number | null>(null);
+
+  const filteredQuestions = filterDomain === 'all' ? shuffled : shuffled.filter(q => q.domain === filterDomain);
+
+  const domainBreakdown = ['d1','d2','d3','d4','d5'].map(d => {
+    const qs = shuffled.filter(q => q.domain === d);
+    const correct = qs.reduce((acc, q, idx) => {
+      const globalIdx = shuffled.indexOf(q);
+      return acc + (answers[globalIdx] === q.shuffledCorrect ? 1 : 0);
+    }, 0);
+    return { domain: d, total: qs.length, correct };
+  }).filter(d => d.total > 0);
+
+  const grade = pct >= 90 ? { label: 'Excellent!', color: 'text-green-600', icon: '🏆' }
+    : pct >= 70 ? { label: 'Good job!', color: 'text-blue-600', icon: '👍' }
+    : pct >= 50 ? { label: 'Keep practicing', color: 'text-amber-600', icon: '📚' }
+    : { label: 'More study needed', color: 'text-red-600', icon: '💪' };
+
+  return (
+    <div className="max-w-3xl mx-auto space-y-6">
+      {/* Back */}
+      <button onClick={onBack} className="flex items-center gap-1 text-sm text-slate-500 hover:text-slate-700">
+        <ArrowLeft className="w-4 h-4" /> Back to Hub
+      </button>
+
+      {/* Score card */}
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-8 text-center">
+        <div className="text-5xl mb-2">{grade.icon}</div>
+        <h2 className={`text-2xl font-bold ${grade.color}`}>{grade.label}</h2>
+        <div className="mt-4 flex items-center justify-center gap-4">
+          <div className="text-4xl font-bold text-slate-900 dark:text-white">{pct}%</div>
+          <div className="text-left text-sm text-slate-500">
+            <div>{score} correct</div>
+            <div>{shuffled.length - score} incorrect</div>
+          </div>
+        </div>
+
+        {/* Domain breakdown */}
+        <div className="mt-6 grid grid-cols-5 gap-2">
+          {domainBreakdown.map(d => {
+            const dm = domainMeta[d.domain];
+            return (
+              <div key={d.domain} className={`${dm.bg} rounded-lg p-2 border ${dm.border}`}>
+                <div className={`text-xs font-medium ${dm.color}`}>D{d.domain[1]}</div>
+                <div className="text-sm font-bold text-slate-900 dark:text-white">{d.correct}/{d.total}</div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Actions */}
+        <div className="mt-6 flex justify-center gap-3">
+          <button onClick={onRetry} className="flex items-center gap-1 px-4 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700">
+            <RotateCcw className="w-4 h-4" /> Try Another
+          </button>
+          <button onClick={onBack} className="flex items-center gap-1 px-4 py-2 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300">
+            Back to Hub
+          </button>
+        </div>
+      </div>
+
+      {/* Review */}
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-semibold text-slate-900 dark:text-white">Review Answers</h3>
+          <div className="flex gap-1">
+            <button
+              onClick={() => setFilterDomain('all')}
+              className={`px-3 py-1 rounded text-xs font-medium ${filterDomain === 'all' ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-600'}`}
+            >
+              All
+            </button>
+            {['d1','d2','d3','d4','d5'].map(d => (
+              <button
+                key={d}
+                onClick={() => setFilterDomain(d)}
+                className={`px-3 py-1 rounded text-xs font-medium ${filterDomain === d ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-600'}`}
+              >
+                D{d[1]}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="space-y-3">
+          {filteredQuestions.map((q, _) => {
+            const globalIdx = shuffled.indexOf(q);
+            const userAnswer = answers[globalIdx];
+            const isCorrect = userAnswer === q.shuffledCorrect;
+            const isExpanded = expandedReview === globalIdx;
+            const dm = domainMeta[q.domain] || domainMeta.d1;
+
+            return (
+              <div key={globalIdx} className={`rounded-xl border p-4 ${isCorrect ? 'border-green-200 bg-green-50/50' : 'border-red-200 bg-red-50/50'}`}>
+                <button
+                  onClick={() => setExpandedReview(isExpanded ? null : globalIdx)}
+                  className="w-full text-left flex items-start gap-3"
+                >
+                  {isCorrect
+                    ? <CheckCircle2 className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
+                    : <XCircle className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" />
+                  }
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm text-slate-900 dark:text-white">{q.question}</p>
+                    <p className={`text-sm mt-1 ${isCorrect ? 'text-green-700' : 'text-red-700'}`}>
+                      {isCorrect ? '✓ Correct' : `✗ Correct answer: ${q.shuffledOptions[q.shuffledCorrect]}`}
+                    </p>
+                  </div>
+                  <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                </button>
+
+                {isExpanded && (
+                  <div className="mt-3 pl-8 space-y-2 text-sm">
+                    <p className="text-slate-600 dark:text-slate-400 italic bg-slate-50 dark:bg-slate-800 rounded p-3">{q.scenario}</p>
+                    <p className="text-slate-700 dark:text-slate-300"><strong>Explanation:</strong> {q.explanation}</p>
+                    {userAnswer !== undefined && !isCorrect && (
+                      <p className="text-red-600"><strong>Your answer:</strong> {q.shuffledOptions[userAnswer]}</p>
+                    )}
+                    {q.trap && (
+                      <p className="text-amber-700"><strong>Trap:</strong> {q.trap}</p>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// MAIN COMPONENT
+// ══════════════════════════════════════════════════════════════════════════════
 export default function ScenarioExamHub() {
-  const { quizScores, setQuizScore } = useCourse();
+  const { setQuizScore } = useCourse();
   const [phase, setPhase] = useState<Phase>('hub');
-  const [selectedExam, setSelectedExam] = useState<number | null>(null);
+  const [currentExam, setCurrentExam] = useState<GeneratedExam | null>(null);
   const [currentQ, setCurrentQ] = useState(0);
   const [answers, setAnswers] = useState<Record<number, number>>({});
-  const [expandedReview, setExpandedReview] = useState<number | null>(null);
-  const [filterDomain, setFilterDomain] = useState<string>('all');
-  const [startTime, setStartTime] = useState(0);
-  const [endTime, setEndTime] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [showFeedback, setShowFeedback] = useState(false);
 
-  const answeredCount = Object.keys(answers).length;
-  const exam = selectedExam !== null ? scenarioExams[selectedExam] : null;
-  const examQuestions = exam?.questions;
-  const questions = useMemo(
-    () => shuffleAllOptions(examQuestions ?? []),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [examQuestions]
-  );
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const q = questions[currentQ] as any;
-  const ec = selectedExam !== null ? examColors[selectedExam] : examColors[0];
+  // Shuffle options with daily seed
+  const shuffled = useMemo(() => {
+    if (!currentExam) return [];
+    return shuffleAllOptions(currentExam.questions) as ShuffledQ[];
+  }, [currentExam]);
 
-  // Save score when exam completes
+  // Save score on results
   useEffect(() => {
-    if (phase === 'results' && exam) {
-      const s = questions.reduce((acc, q, i) => acc + (answers[i] === q.shuffledCorrect ? 1 : 0), 0);
-      const p = Math.round((s / questions.length) * 100);
-      setQuizScore(`scenario-exam-${exam.id}`, p);
+    if (phase === 'results' && currentExam) {
+      const score = shuffled.reduce((acc, q, i) => acc + (answers[i] === q.shuffledCorrect ? 1 : 0), 0);
+      const pct = Math.round((score / shuffled.length) * 100);
+      setQuizScore(`sim-${currentExam.id}`, pct);
     }
   }, [phase]);
 
-  // ── Start exam ─────────────────────────────────────────────
-  const startExam = (id: number) => {
-    setSelectedExam(id);
+  const handleStart = (exam: GeneratedExam) => {
+    setCurrentExam(exam);
     setPhase('exam');
     setCurrentQ(0);
     setAnswers({});
-    setStartTime(Date.now());
     setSelectedAnswer(null);
     setShowFeedback(false);
   };
 
-  // ── Select answer ──────────────────────────────────────────
   const handleSelect = (index: number) => {
-    if (showFeedback || !q) return;
+    if (showFeedback) return;
     setSelectedAnswer(index);
     setShowFeedback(true);
     setAnswers(prev => ({ ...prev, [currentQ]: index }));
   };
 
-  // ── Next question ──────────────────────────────────────────
   const handleNext = () => {
-    if (currentQ < questions.length - 1) {
-      setCurrentQ(currentQ + 1);
-      setSelectedAnswer(null);
-      setShowFeedback(false);
-    } else {
-      setEndTime(Date.now());
-      setPhase('results');
-    }
-  };
-
-  // ── Reset ──────────────────────────────────────────────────
-  const handleReset = () => {
-    setPhase('exam');
-    setCurrentQ(0);
-    setAnswers({});
-    setStartTime(Date.now());
+    setCurrentQ(prev => prev + 1);
     setSelectedAnswer(null);
     setShowFeedback(false);
   };
 
-  // ── Score calc ─────────────────────────────────────────────
-  const score = questions.reduce((acc, q, i) => acc + (answers[i] === q.shuffledCorrect ? 1 : 0), 0);
-  const filteredQuestions = filterDomain === 'all' ? questions : questions.filter(q => q.domain === filterDomain);
+  const handleSubmit = () => {
+    setPhase('results');
+  };
 
-  // ── Domain breakdown ───────────────────────────────────────
-  const domainBreakdown = ['d1','d2','d3','d4','d5'].map(d => {
-    const qs = questions.filter(q => q.domain === d);
-    const correct = qs.filter(q => answers[q.id - 1] === q.shuffledCorrect).length;
-    return { domain: d, total: qs.length, correct };
-  });
+  const handleRetry = () => {
+    setPhase('hub');
+    setCurrentExam(null);
+  };
 
-  // ══════════════════════════════════════════════════════════════
-  // HUB
-  // ══════════════════════════════════════════════════════════════
-  if (phase === 'hub') {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-        <div className="max-w-5xl mx-auto px-4 py-8">
-          {/* Header */}
-          <div className="mb-8">
-            <Link to="/dashboard" className="text-slate-500 hover:text-slate-700 text-sm flex items-center gap-1 mb-4">
-              <ArrowLeft className="w-4 h-4" /> Dashboard
-            </Link>
-            <div className="flex items-center gap-3 mb-2">
-              <div className="p-2 bg-gradient-to-r from-violet-500 to-purple-600 rounded-xl">
-                <FlaskConical className="w-6 h-6 text-white" />
-              </div>
-              <h1 className="text-3xl font-bold text-slate-900">Scenario Exams</h1>
-            </div>
-            <p className="text-slate-600 text-lg">
-              The real exam picks 4 of 6 scenarios at random. Practice each one with 20 scenario-specific questions.
-            </p>
-          </div>
-
-          {/* Exam Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {scenarioExams.map((exam, idx) => {
-              const c = examColors[idx];
-              const scoreKey = `scenario-exam-${exam.id}`;
-              const bestScore = quizScores[scoreKey];
-              return (
-                <button
-                  key={exam.id}
-                  onClick={() => startExam(idx)}
-                  className="group text-left bg-white rounded-2xl border border-slate-200 overflow-hidden hover:shadow-xl hover:border-slate-300 transition-all duration-300 hover:-translate-y-1"
-                >
-                  {/* Color strip */}
-                  <div className={`h-2 bg-gradient-to-r ${c.gradient}`} />
-
-                  <div className="p-5">
-                    <div className="flex items-center gap-3 mb-3">
-                      <span className="text-3xl">{exam.icon}</span>
-                      <div>
-                        <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                          Scenario {exam.id} of 6
-                        </div>
-                        <h3 className="font-bold text-slate-900 group-hover:text-slate-800">
-                          {exam.title}
-                        </h3>
-                      </div>
-                    </div>
-                    <p className="text-sm text-slate-600 mb-4 line-clamp-2">{exam.description}</p>
-
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2 text-xs text-slate-500">
-                        <Target className="w-3.5 h-3.5" />
-                        {exam.questions.length} questions
-                      </div>
-                      {bestScore !== undefined && (
-                        <span className={`text-xs font-semibold px-2 py-1 rounded-full ${
-                          bestScore >= 80 ? 'bg-emerald-100 text-emerald-700' :
-                          bestScore >= 60 ? 'bg-amber-100 text-amber-700' :
-                          'bg-red-100 text-red-700'
-                        }`}>
-                          Best: {bestScore}%
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Domain dots */}
-                    <div className="flex gap-1.5 mt-3">
-                      {['d1','d2','d3','d4','d5'].map(d => (
-                        <span key={d} className={`w-2 h-2 rounded-full ${
-                          d === 'd1' ? 'bg-violet-400' :
-                          d === 'd2' ? 'bg-emerald-400' :
-                          d === 'd3' ? 'bg-blue-400' :
-                          d === 'd4' ? 'bg-amber-400' : 'bg-red-400'
-                        }`} title={domainMeta[d].label} />
-                      ))}
-                      <span className="text-[10px] text-slate-400 ml-1">All 5 domains</span>
-                    </div>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Exam tip */}
-          <div className="mt-8 bg-gradient-to-r from-violet-50 to-purple-50 border border-violet-200 rounded-xl p-5">
-            <div className="flex items-start gap-3">
-              <Lightbulb className="w-5 h-5 text-violet-600 mt-0.5 shrink-0" />
-              <div>
-                <h3 className="font-semibold text-violet-900 mb-1">Exam Tip</h3>
-                <p className="text-sm text-violet-700">
-                  The real exam randomly selects <strong>4 of 6</strong> scenarios. Each scenario frames questions
-                  from all 5 exam domains. Practice all 6 to be fully prepared — you won't know which 4 you'll get!
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // ══════════════════════════════════════════════════════════════
-  // EXAM
-  // ══════════════════════════════════════════════════════════════
-  if (phase === 'exam' && q) {
-    const isCorrect = selectedAnswer === q.shuffledCorrect;
-    const dm = domainMeta[q.domain];
-    const progress = ((currentQ + (showFeedback ? 1 : 0)) / questions.length) * 100;
-
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-        <div className="max-w-3xl mx-auto px-4 py-8">
-          {/* Header */}
-          <div className="flex items-center justify-between mb-6">
-            <button onClick={() => setPhase('hub')} className="text-slate-500 hover:text-slate-700 flex items-center gap-1 text-sm">
-              <ArrowLeft className="w-4 h-4" /> All Scenarios
-            </button>
-            <div className="flex items-center gap-3">
-              <span className="text-2xl">{exam?.icon}</span>
-              <span className="font-semibold text-slate-700">{exam?.title}</span>
-            </div>
-            <div className="text-sm text-slate-500">
-              {currentQ + 1}/{questions.length}
-            </div>
-          </div>
-
-          {/* Progress bar */}
-          <div className="w-full h-2 bg-slate-200 rounded-full mb-6 overflow-hidden">
-            <div className={`h-full bg-gradient-to-r ${ec.gradient} rounded-full transition-all duration-500`} style={{ width: `${progress}%` }} />
-          </div>
-
-          {/* Domain badge */}
-          <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${dm.bg} ${dm.color} ${dm.border} border mb-4`}>
-            {q.domainLabel}
-          </div>
-
-          {/* Scenario */}
-          <div className="bg-white rounded-xl border border-slate-200 p-5 mb-5 shadow-sm">
-            <div className="flex items-start gap-2 mb-2">
-              <Scroll className="w-4 h-4 text-slate-400 mt-0.5 shrink-0" />
-              <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Scenario</span>
-            </div>
-            <p className="text-slate-700 text-sm leading-relaxed">{q.scenario}</p>
-          </div>
-
-          {/* Question */}
-          <h2 className="text-lg font-bold text-slate-900 mb-5">{q.question}</h2>
-
-          {/* Options */}
-          <div className="space-y-3 mb-5">
-            {q.shuffledOptions.map((opt, i) => {
-              const isSelected = selectedAnswer === i;
-              const isCorrectOption = i === q.shuffledCorrect;
-              let optClasses = 'bg-white border-slate-200 hover:border-slate-400';
-              if (showFeedback) {
-                if (isCorrectOption) optClasses = 'bg-emerald-50 border-emerald-400 ring-2 ring-emerald-200';
-                else if (isSelected && !isCorrectOption) optClasses = 'bg-red-50 border-red-400 ring-2 ring-red-200';
-                else optClasses = 'bg-slate-50 border-slate-200 opacity-60';
-              } else if (isSelected) {
-                optClasses = `${ec.light} ${ec.border} ring-2`;
-              }
-
-              return (
-                <button
-                  key={i}
-                  onClick={() => handleSelect(i)}
-                  disabled={showFeedback}
-                  className={`w-full text-left p-4 rounded-xl border-2 transition-all ${optClasses} ${showFeedback ? 'cursor-default' : 'cursor-pointer'}`}
-                >
-                  <div className="flex items-start gap-3">
-                    <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
-                      showFeedback && isCorrectOption ? 'bg-emerald-500 text-white' :
-                      showFeedback && isSelected && !isCorrectOption ? 'bg-red-500 text-white' :
-                      isSelected ? `${ec.bg} text-white` : 'bg-slate-100 text-slate-600'
-                    }`}>
-                      {showFeedback && isCorrectOption ? '✓' :
-                       showFeedback && isSelected && !isCorrectOption ? '✗' :
-                       String.fromCharCode(65 + i)}
-                    </span>
-                    <span className="text-sm text-slate-700">{opt.replace(/^[A-D]\)\s*/, '')}</span>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Feedback */}
-          {showFeedback && (
-            <div className={`rounded-xl border-2 p-5 mb-5 ${isCorrect ? 'bg-emerald-50 border-emerald-200' : 'bg-red-50 border-red-200'}`}>
-              <div className="flex items-center gap-2 mb-2">
-                {isCorrect ? (
-                  <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-                ) : (
-                  <XCircle className="w-5 h-5 text-red-600" />
-                )}
-                <span className={`font-semibold ${isCorrect ? 'text-emerald-700' : 'text-red-700'}`}>
-                  {isCorrect ? 'Correct!' : 'Incorrect'}
-                </span>
-              </div>
-              <p className="text-sm text-slate-700 leading-relaxed">{q.explanation}</p>
-            </div>
-          )}
-
-          {/* Navigation */}
-          {showFeedback && (
-            <div className="flex justify-end">
-              <button
-                onClick={handleNext}
-                className={`flex items-center gap-2 px-6 py-3 bg-gradient-to-r ${ec.gradient} text-white font-semibold rounded-xl hover:opacity-90 transition shadow-lg`}
-              >
-                {currentQ < questions.length - 1 ? (
-                  <>Next <ArrowRight className="w-4 h-4" /></>
-                ) : (
-                  <>See Results <Trophy className="w-4 h-4" /></>
-                )}
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  }
-
-  // ══════════════════════════════════════════════════════════════
-  // RESULTS
-  // ══════════════════════════════════════════════════════════════
-  const pct = Math.round((score / questions.length) * 100);
-  const elapsed = Math.round((endTime - startTime) / 1000);
-  const minutes = Math.floor(elapsed / 60);
-  const seconds = elapsed % 60;
+  const handleBack = () => {
+    setPhase('hub');
+    setCurrentExam(null);
+  };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-      <div className="max-w-3xl mx-auto px-4 py-8">
-        {/* Score header */}
-        <div className="text-center mb-8">
-          <span className="text-4xl mb-3 block">{exam?.icon}</span>
-          <h1 className="text-2xl font-bold text-slate-900 mb-1">{exam?.title} — Results</h1>
-          <div className={`inline-flex items-center justify-center w-28 h-28 rounded-full bg-gradient-to-r ${ec.gradient} text-white my-4`}>
-            <div>
-              <div className="text-3xl font-bold">{pct}%</div>
-              <div className="text-xs opacity-80">{score}/{questions.length}</div>
-            </div>
-          </div>
-          <div className="flex items-center justify-center gap-4 text-sm text-slate-500">
-            <span className="flex items-center gap-1"><Clock className="w-4 h-4" />{minutes}m {seconds}s</span>
-            <span className="flex items-center gap-1"><BarChart3 className="w-4 h-4" />{pct >= 80 ? 'Pass' : 'Review needed'}</span>
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+      <div className="max-w-5xl mx-auto px-4 py-8">
+        <div className="flex items-center gap-3 mb-6">
+          <Link to="/" className="text-slate-400 hover:text-slate-600"><ArrowLeft className="w-5 h-5" /></Link>
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <FlaskConical className="w-6 h-6 text-violet-500" /> Scenario Exams
+            </h1>
+            <p className="text-sm text-slate-500">Randomized practice exams from the question pool</p>
           </div>
         </div>
 
-        {/* Domain breakdown */}
-        <div className="bg-white rounded-xl border border-slate-200 p-5 mb-6">
-          <h3 className="font-bold text-slate-900 mb-4">Domain Breakdown</h3>
-          <div className="space-y-3">
-            {domainBreakdown.map(({ domain, total, correct }) => {
-              const dm = domainMeta[domain];
-              const dpct = total > 0 ? Math.round((correct / total) * 100) : 0;
-              return (
-                <div key={domain}>
-                  <div className="flex items-center justify-between mb-1">
-                    <span className={`text-xs font-semibold ${dm.color}`}>{dm.label}</span>
-                    <span className="text-xs text-slate-500">{correct}/{total} ({dpct}%)</span>
-                  </div>
-                  <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
-                    <div className={`h-full rounded-full ${dpct >= 80 ? 'bg-emerald-500' : dpct >= 60 ? 'bg-amber-500' : 'bg-red-500'}`} style={{ width: `${dpct}%` }} />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Review questions */}
-        <div className="bg-white rounded-xl border border-slate-200 p-5 mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-bold text-slate-900">Review Answers</h3>
-            <select
-              value={filterDomain}
-              onChange={e => setFilterDomain(e.target.value)}
-              className="text-sm border border-slate-200 rounded-lg px-3 py-1.5 bg-white"
-            >
-              <option value="all">All Domains</option>
-              {Object.entries(domainMeta).map(([k, v]) => (
-                <option key={k} value={k}>{v.label}</option>
-              ))}
-            </select>
-          </div>
-
-          <div className="space-y-2">
-            {filteredQuestions.map((q, idx) => {
-              const userAnswer = answers[q.id - 1];
-              const correct = userAnswer === q.shuffledCorrect;
-              const expanded = expandedReview === q.id;
-
-              return (
-                <div key={q.id} className={`rounded-lg border ${correct ? 'border-emerald-200 bg-emerald-50/50' : 'border-red-200 bg-red-50/50'}`}>
-                  <button
-                    onClick={() => setExpandedReview(expanded ? null : q.id)}
-                    className="w-full flex items-center gap-3 p-3 text-left"
-                  >
-                    {correct ? (
-                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                    ) : (
-                      <XCircle className="w-4 h-4 text-red-600 shrink-0" />
-                    )}
-                    <span className="text-sm text-slate-700 flex-1">{q.question}</span>
-                    <ChevronDown className={`w-4 h-4 text-slate-400 transition ${expanded ? 'rotate-180' : ''}`} />
-                  </button>
-                  {expanded && (
-                    <div className="px-3 pb-3 border-t border-slate-200 pt-3">
-                      <p className="text-sm text-slate-600 mb-2"><strong>Scenario:</strong> {q.scenario}</p>
-                      <p className="text-sm text-slate-600 mb-2"><strong>Your answer:</strong> {userAnswer !== undefined ? q.shuffledOptions[userAnswer] : 'Not answered'}</p>
-                      <p className="text-sm text-emerald-700 mb-2"><strong>Correct:</strong> {q.shuffledOptions[q.shuffledCorrect]}</p>
-                      <p className="text-sm text-slate-600">{q.explanation}</p>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Actions */}
-        <div className="flex items-center justify-center gap-4">
-          <button
-            onClick={handleReset}
-            className="flex items-center gap-2 px-5 py-2.5 bg-white border border-slate-200 rounded-xl text-slate-700 hover:bg-slate-50 transition"
-          >
-            <RotateCcw className="w-4 h-4" /> Retry
-          </button>
-          <button
-            onClick={() => setPhase('hub')}
-            className={`flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r ${ec.gradient} text-white rounded-xl hover:opacity-90 transition shadow-lg`}
-          >
-            All Scenarios
-          </button>
-        </div>
+        {phase === 'hub' && <HubPhase onStart={handleStart} />}
+        {phase === 'exam' && currentExam && (
+          <ExamPhase
+            exam={currentExam} shuffled={shuffled} answers={answers}
+            currentQ={currentQ} showFeedback={showFeedback} selectedAnswer={selectedAnswer}
+            onSelect={handleSelect} onNext={handleNext} onSubmit={handleSubmit} onBack={handleBack}
+          />
+        )}
+        {phase === 'results' && currentExam && (
+          <ResultsPhase
+            exam={currentExam} shuffled={shuffled} answers={answers}
+            onRetry={handleRetry} onBack={handleBack}
+          />
+        )}
       </div>
     </div>
   );

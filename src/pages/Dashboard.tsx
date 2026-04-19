@@ -156,11 +156,12 @@ export default function Dashboard() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         <StatCard icon={BookOpen} label="Lessons" value={`${totalCompleted}/${totalLessons}`} color="#3b82f6" />
         <StatCard icon={FlaskConical} label="Labs" value={`${completedLabs.size}/14`} color="#10b981" />
         <StatCard icon={Brain} label="Flashcards" value={`${flashcardsReviewed}`} color="#8b5cf6" />
         <StatCard icon={StickyNote} label="Notes" value={`${notesCount}`} color="#f59e0b" />
+        <StatCard icon={FlaskConical} label="Simulators" value={`${Object.keys(quizScores).filter(k => k.startsWith('sim-')).length}`} color="#ec4899" />
       </div>
 
       {/* Radar + Progress */}
@@ -192,7 +193,11 @@ export default function Dashboard() {
             <h3 className="font-semibold text-slate-900 dark:text-white mb-4">Exam Scores</h3>
             <div className="space-y-3">
               <ScoreRow label="Practice Exam (60Q)" score={practiceExamScore} />
-              <ScoreRow label="Scenario Exam (20Q)" score={scenarioExamScore} />
+              {(() => {
+                const simScores = Object.entries(quizScores).filter(([k]) => k.startsWith('sim-')).map(([, v]) => v);
+                const bestSim = simScores.length > 0 ? Math.max(...simScores) : null;
+                return <ScoreRow label={`Simulators (${simScores.length} completed)`} score={bestSim} />;
+              })()}
               {domainInfo.map(d => (
                 <ScoreRow key={d.id} label={`Quiz D${d.id.replace('domain', '')}: ${d.name}`} score={quizScores[d.id]} />
               ))}

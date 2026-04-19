@@ -124,7 +124,7 @@ export default function Layout() {
                 <Link to="/exam-scenarios" onClick={closeDrawer} className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-slate-600 dark:text-slate-400"><Zap className="w-5 h-5" /><span className="text-sm font-medium">Scenario Labs</span></Link>
                 <Link to="/practice-exam" onClick={closeDrawer} className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-slate-600 dark:text-slate-400"><GraduationCap className="w-5 h-5" /><span className="text-sm font-medium">Trivia Exam</span></Link>
                 <Link to="/scenario-exam" onClick={closeDrawer} className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-slate-600 dark:text-slate-400"><Briefcase className="w-5 h-5" /><span className="text-sm font-medium">Scenario Exam (20Q)</span></Link>
-                <Link to="/scenario-exams" onClick={closeDrawer} className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-slate-600 dark:text-slate-400"><Target className="w-5 h-5" /><span className="text-sm font-medium">Scenario Exams (6×20Q)</span></Link>
+                <Link to="/scenario-exams" onClick={closeDrawer} className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-slate-600 dark:text-slate-400"><Target className="w-5 h-5" /><span className="text-sm font-medium">Exam Simulator</span></Link>
               </div>
             </nav>
           </aside>
@@ -229,7 +229,7 @@ export default function Layout() {
           <NavLink to="/exam-scenarios" icon={Zap} label="Exam Scenario Labs" />
           <NavLink to="/practice-exam" icon={GraduationCap} label="Trivia Exam (60Q)" />
           <NavLink to="/scenario-exam" icon={Briefcase} label="Scenario Exam (20Q)" />
-          <NavLink to="/scenario-exams" icon={Target} label="Scenario Exams (6×20Q)" />
+          <NavLink to="/scenario-exams" icon={Target} label="Exam Simulator" />
         </div>
       </aside>
 

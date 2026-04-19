@@ -178,3 +178,52 @@ describe('scenarios data', () => {
     expect(content).toMatch(/question:/);
   });
 });
+
+// ─── Question Bank ──────────────────────────────────────────────
+describe('question bank', () => {
+  it('has newQuestions file', () => {
+    const content = readDataFile('data/questionBank/newQuestions.ts');
+    expect(content).toMatch(/export/);
+    expect(content).toMatch(/poolId/);
+  });
+
+  it('has index file', () => {
+    const content = readDataFile('data/questionBank/index.ts');
+    expect(content).toMatch(/export/);
+    expect(content).toMatch(/generateRandomExam/);
+    expect(content).toMatch(/generateDomainExam/);
+    expect(content).toMatch(/generateFullExam/);
+  });
+
+  it('new questions have valid poolIds >= 121', () => {
+    const content = readDataFile('data/questionBank/newQuestions.ts');
+    const ids = [...content.matchAll(/poolId:\s*(\d+)/g)].map(m => parseInt(m[1]));
+    expect(ids.length).toBeGreaterThanOrEqual(50);
+    ids.forEach(id => {
+      expect(id).toBeGreaterThanOrEqual(121);
+    });
+  });
+
+  it('new questions have valid domains', () => {
+    const content = readDataFile('data/questionBank/newQuestions.ts');
+    const domains = [...content.matchAll(/domain:\s*'(d[1-5])'/g)].map(m => m[1]);
+    expect(domains.length).toBeGreaterThanOrEqual(50);
+    const uniqueDomains = [...new Set(domains)];
+    expect(uniqueDomains.length).toBe(5);
+  });
+
+  it('each domain has at least 10 new questions', () => {
+    const content = readDataFile('data/questionBank/newQuestions.ts');
+    for (const d of ['d1', 'd2', 'd3', 'd4', 'd5']) {
+      const count = (content.match(new RegExp(`domain: '${d}'`, 'g')) || []).length;
+      expect(count).toBeGreaterThanOrEqual(10);
+    }
+  });
+
+  it('all questions have options arrays', () => {
+    const content = readDataFile('data/questionBank/newQuestions.ts');
+    // Each question should have an options: [ block with at least 4 entries
+    const optionsBlocks = content.match(/options:\s*\[[\s\S]*?\n    \]/g) || [];
+    expect(optionsBlocks.length).toBeGreaterThanOrEqual(50);
+  });
+});
