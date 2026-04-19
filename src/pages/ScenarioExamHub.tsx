@@ -44,8 +44,12 @@ export default function ScenarioExamHub() {
 
   const answeredCount = Object.keys(answers).length;
   const exam = selectedExam !== null ? scenarioExams[selectedExam] : null;
-  const rawQuestions = exam?.questions || [];
-  const questions = useMemo(() => shuffleAllOptions(rawQuestions), [rawQuestions]);
+  const examQuestions = exam?.questions;
+  const questions = useMemo(
+    () => shuffleAllOptions(examQuestions ?? []),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [examQuestions]
+  );
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const q = questions[currentQ] as any;
   const ec = selectedExam !== null ? examColors[selectedExam] : examColors[0];
