@@ -5,9 +5,16 @@
  * Used by the Scenario Exam Hub to generate random exams.
  */
 import type { ScenarioQuestion } from '../scenarioExams/types';
-import type { PoolQuestion } from './newQuestions';
-import { questionBank, bankByDomain } from './newQuestions';
+import type { PoolQuestion } from './d1';
+import d1New from './d1';
+import d2New from './d2';
+import d3New from './d3';
+import d4New from './d4';
+import d5New from './d5';
 import { scenarioExams } from '../scenarioExams';
+
+// Combine all new domain questions
+const questionBank: PoolQuestion[] = [...d1New, ...d2New, ...d3New, ...d4New, ...d5New];
 
 // ── Normalize a scenario question to pool format ──────────────────────────
 interface UnifiedQuestion {
