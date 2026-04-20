@@ -3,6 +3,7 @@ export interface ScenarioQuestion {
   examScenario: number; // 1-6
   domain: 'd1' | 'd2' | 'd3' | 'd4' | 'd5';
   domainLabel: string;
+  examTask: string; // e.g. "1.1 Agentic Loops"
   scenario: string;
   question: string;
   options: string[];

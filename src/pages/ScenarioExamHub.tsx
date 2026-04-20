@@ -42,11 +42,15 @@ interface ShuffledQ extends UnifiedQuestion {
 }
 
 // Convert a scenario exam question to UnifiedQuestion format
-function scenarioToUnified(examId: number, q: { id: number; domain: string; domainLabel: string; scenario: string; question: string; options: string[]; correct: number; explanation: string; trap?: string }): UnifiedQuestion {
+/** Strip leading "A) ", "B) ", "C) ", "D) " prefix from option text */
+const stripOptPrefix = (s: string) => s.replace(/^[A-D]\)\s*/, '');
+
+function scenarioToUnified(examId: number, q: { id: number; domain: string; domainLabel: string; examTask?: string; scenario: string; question: string; options: string[]; correct: number; explanation: string; trap?: string }): UnifiedQuestion {
   return {
     poolId: (examId - 1) * 20 + q.id,
     domain: q.domain as UnifiedQuestion['domain'],
     domainLabel: q.domainLabel,
+    examTask: (q as { examTask?: string }).examTask || '',
     scenario: q.scenario,
     question: q.question,
     options: [...q.options],
@@ -306,7 +310,7 @@ function ExamPhase({
                 <span className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold flex-shrink-0 ${letterBg}`}>
                   {letter}
                 </span>
-                <span className="text-sm text-slate-700 dark:text-slate-300">{opt}</span>
+                <span className="text-sm text-slate-700 dark:text-slate-300">{stripOptPrefix(opt)}</span>
                 {showFeedback && i === q.shuffledCorrect && (
                   <CheckCircle2 className="w-5 h-5 text-green-500 ml-auto flex-shrink-0" />
                 )}
@@ -331,6 +335,7 @@ function ExamPhase({
                 <p className={`text-sm font-medium ${isCorrect ? 'text-green-700' : 'text-red-700'}`}>
                   {isCorrect ? 'Correct!' : 'Incorrect'}
                 </p>
+                {q.examTask && <p className="text-xs font-mono text-indigo-600 dark:text-indigo-400 mb-1">📘 {q.examTask}</p>}
                 <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">{q.explanation}</p>
               </div>
             </div>
@@ -339,7 +344,7 @@ function ExamPhase({
                 <Sparkles className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
                 <p className="text-sm text-green-700">
                   <span className="font-semibold">Correct answer: </span>
-                  {q.shuffledOptions[q.shuffledCorrect]}
+                  {stripOptPrefix(q.shuffledOptions[q.shuffledCorrect])}
                 </p>
               </div>
             )}
@@ -506,7 +511,7 @@ function ResultsPhase({
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-sm text-slate-900 dark:text-white">{q.question}</p>
                     <p className={`text-sm mt-1 ${isCorrect ? 'text-green-700' : 'text-red-700'}`}>
-                      {isCorrect ? '✓ Correct' : `✗ Correct answer: ${q.shuffledOptions[q.shuffledCorrect]}`}
+                      {isCorrect ? '✓ Correct' : `✗ Correct answer: ${stripOptPrefix(q.shuffledOptions[q.shuffledCorrect])}`}
                     </p>
                   </div>
                   <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
@@ -515,9 +520,10 @@ function ResultsPhase({
                 {isExpanded && (
                   <div className="mt-3 pl-8 space-y-2 text-sm">
                     <p className="text-slate-600 dark:text-slate-400 italic bg-slate-50 dark:bg-slate-800 rounded p-3">{q.scenario}</p>
+                    {q.examTask && <p className="text-xs font-mono text-indigo-600 dark:text-indigo-400">📘 {q.examTask}</p>}
                     <p className="text-slate-700 dark:text-slate-300"><strong>Explanation:</strong> {q.explanation}</p>
                     {userAnswer !== undefined && !isCorrect && (
-                      <p className="text-red-600"><strong>Your answer:</strong> {q.shuffledOptions[userAnswer]}</p>
+                      <p className="text-red-600"><strong>Your answer:</strong> {stripOptPrefix(q.shuffledOptions[userAnswer])}</p>
                     )}
                     {q.trap && (
                       <p className="text-amber-700"><strong>Trap:</strong> {q.trap}</p>

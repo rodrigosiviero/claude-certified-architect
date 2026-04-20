@@ -21,6 +21,7 @@ interface UnifiedQuestion {
   poolId: number;
   domain: 'd1' | 'd2' | 'd3' | 'd4' | 'd5';
   domainLabel: string;
+  examTask: string;
   scenario: string;
   question: string;
   options: string[];
@@ -40,6 +41,7 @@ function buildFullPool(): UnifiedQuestion[] {
         poolId: (exam.id - 1) * 20 + q.id, // 1-20, 21-40, 41-60, 61-80, 81-100, 101-120
         domain: q.domain,
         domainLabel: q.domainLabel,
+        examTask: q.examTask || '',
         scenario: q.scenario,
         question: q.question,
         options: [...q.options],
@@ -56,6 +58,7 @@ function buildFullPool(): UnifiedQuestion[] {
       poolId: q.poolId,
       domain: q.domain,
       domainLabel: q.domainLabel,
+      examTask: q.examTask || '',
       scenario: q.scenario,
       question: q.question,
       options: [...q.options],
