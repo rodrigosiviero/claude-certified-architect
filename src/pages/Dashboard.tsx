@@ -192,7 +192,7 @@ export default function Dashboard() {
           <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6">
             <h3 className="font-semibold text-slate-900 dark:text-white mb-4">Exam Scores</h3>
             <div className="space-y-3">
-              <ScoreRow label="Practice Exam (60Q)" score={practiceExamScore} />
+              <ScoreRow label="Practice Exam (66Q)" score={practiceExamScore} />
               {(() => {
                 const simScores = Object.entries(quizScores).filter(([k]) => k.startsWith('sim-')).map(([, v]) => v);
                 const bestSim = simScores.length > 0 ? Math.max(...simScores) : null;

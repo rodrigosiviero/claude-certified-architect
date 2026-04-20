@@ -86,7 +86,7 @@ export default function PracticeExam() {
             <span className="bg-white/20 px-3 py-1 rounded-full text-sm font-medium">Full Practice Exam</span>
           </div>
           <h1 className="text-3xl font-bold mb-3">Claude Certified Architect — Practice Exam</h1>
-          <p className="text-violet-100">60 questions covering all 5 domains. Answer all questions, then review each one with detailed explanations.</p>
+          <p className="text-violet-100">66 questions covering all 5 domains. Answer all questions, then review each one with detailed explanations.</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
@@ -104,7 +104,7 @@ export default function PracticeExam() {
         <div className="bg-white dark:bg-slate-900 rounded-xl border p-6 space-y-4">
           <h3 className="font-semibold text-slate-900 flex items-center gap-2"><BookOpen className="w-5 h-5" /> Exam Format</h3>
           <ul className="space-y-2 text-sm text-slate-600 dark:text-slate-400">
-            <li className="flex items-start gap-2"><span className="text-violet-600 font-bold">1.</span> Answer all 60 questions — select one option per question</li>
+            <li className="flex items-start gap-2"><span className="text-violet-600 font-bold">1.</span> Answer all 66 questions — select one option per question</li>
             <li className="flex items-start gap-2"><span className="text-violet-600 font-bold">2.</span> Submit when you're done (or when all questions are answered)</li>
             <li className="flex items-start gap-2"><span className="text-violet-600 font-bold">3.</span> Review your score by domain and see detailed explanations</li>
             <li className="flex items-start gap-2"><span className="text-violet-600 font-bold">4.</span> Expand any question to see why the correct answer is right</li>

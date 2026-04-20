@@ -164,7 +164,7 @@ export const achievements: Achievement[] = [
   {
     id: 'practice-pass',
     title: 'Exam Ready',
-    description: 'Score 70%+ on the Practice Exam (60 questions)',
+    description: 'Score 70%+ on the Practice Exam (66 questions)',
     icon: '📝',
     category: 'speed',
     rarity: 'uncommon',

@@ -227,7 +227,7 @@ export default function Layout() {
         <div className="p-4 border-t border-slate-200 dark:border-slate-800 space-y-1">
           <NavLink to="/labs" icon={FlaskConical} label="Hands-on Labs" />
           <NavLink to="/exam-scenarios" icon={Zap} label="Exam Scenario Labs" />
-          <NavLink to="/practice-exam" icon={GraduationCap} label="Trivia Exam (60Q)" />
+          <NavLink to="/practice-exam" icon={GraduationCap} label="Trivia Exam (66Q)" />
           <NavLink to="/scenario-exam" icon={Briefcase} label="Scenario Exam (20Q)" />
           <NavLink to="/scenario-exams" icon={Target} label="Exam Simulator" />
         </div>
